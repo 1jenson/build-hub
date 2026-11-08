@@ -1943,7 +1943,7 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
     var sel=$('#vx-voice');if(!sel)return;
     var j=jarvisVoice();
     sel.innerHTML='<option value="jarvis">Jarvis · British butler'+(j?' ('+esc(vlabel(j))+')':'')+'</option>'+Object.keys(HDV).map(function(k){return '<option value="hd:'+k+'">Jarvis HD · '+HDV[k]+' (free, one-off download)</option>'}).join('')+'<option value="local">Jarvis Local · cloned voice (runs on this Mac)</option>'+voices.map(function(v){return '<option value="'+esc(v.name)+'">'+esc(vlabel(v))+' · '+esc(v.lang)+'</option>'}).join('');
-    var pv=pickVoice();sel.value=hdVoice()?'hd:'+hdVoice():(pv.jarvis?'jarvis':pv.v.name);
+    var pv=pickVoice();sel.value=isLocal()?'local':hdVoice()?'hd:'+hdVoice():(pv.jarvis?'jarvis':pv.v.name);
     vNote();
   }
   if(syn){loadVoices();if(syn.addEventListener)syn.addEventListener('voiceschanged',loadVoices);else syn.onvoiceschanged=loadVoices}
