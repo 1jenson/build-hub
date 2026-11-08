@@ -600,6 +600,30 @@ a.tile:hover{transform:translateY(-3px);border-color:var(--line2)}
 @keyframes fade{from{opacity:0}}
 @keyframes pop{from{transform:scale(.94);opacity:0}}
 @keyframes slide{from{transform:translateX(-8px);opacity:0}}
+.night-p{grid-area:night;flex-direction:row;align-items:center;gap:18px 28px;flex-wrap:wrap;padding:16px 22px;background-image:linear-gradient(90deg,rgba(255,42,61,.10),transparent 45%)}
+.night-p.on{border-color:color-mix(in srgb,var(--red) 60%,transparent);box-shadow:0 0 42px -14px var(--redg)}
+.ns-sw{position:relative;flex:none;width:118px;height:58px;border-radius:30px;border:1px solid var(--hudl);background:#0b0d12;cursor:pointer;padding:0;transition:background .25s,border-color .25s,box-shadow .25s}
+.ns-sw::after{content:"";position:absolute;top:5px;left:5px;width:46px;height:46px;border-radius:50%;background:#2a2e38;transition:transform .28s cubic-bezier(.2,.9,.3,1.2),background .25s}
+.ns-sw[aria-checked=true]{background:var(--redd);border-color:var(--red);box-shadow:0 0 28px -4px var(--redg)}
+.ns-sw[aria-checked=true]::after{transform:translateX(60px);background:var(--red);box-shadow:0 0 18px var(--redg)}
+.ns-sw .lb{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 15px;font:700 11px/1 var(--f-mono);letter-spacing:.14em;color:var(--ink3);pointer-events:none}
+.ns-sw[aria-checked=true] .lb span:first-child,.ns-sw[aria-checked=false] .lb span:last-child{color:var(--ink)}
+.ns-sw:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.ns-main{flex:1 1 260px;min-width:0}
+.ns-t{font:700 clamp(20px,2.2vw,28px)/1.05 var(--f-display);letter-spacing:.02em;color:var(--ink);text-transform:uppercase}
+.ns-t span{color:var(--red)}
+.ns-s{margin-top:6px;font:500 12.5px/1.5 var(--f-mono);color:var(--ink2)}
+.ns-rep{flex:1 1 320px;min-width:0;border-left:1px solid var(--hudl);padding-left:22px}
+.ns-rep p{margin:6px 0 0;font-size:13.5px;line-height:1.5}
+.ns-rep ul{margin:6px 0 0;padding:0;list-style:none;font-size:13px;line-height:1.5}
+.ns-rep li{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.ns-rep li b{color:var(--red2)}
+.ns-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.ns-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink3);margin-right:7px;vertical-align:middle}
+.ns-dot.on{background:var(--red);box-shadow:0 0 10px var(--red);animation:nsblink 1.6s infinite}
+.ns-dot.run{background:var(--ok);box-shadow:0 0 10px var(--ok);animation:nsblink .9s infinite}
+@keyframes nsblink{50%{opacity:.35}}
+@media (max-width:620px){.ns-rep{border-left:0;padding-left:0;border-top:1px solid var(--hudl);padding-top:12px}.night-p{padding:14px 14px}}
 @keyframes rise{from{transform:translateY(14px);opacity:.25}}
 @keyframes ringin{from{stroke-dashoffset:var(--full)}}
 @keyframes grow{from{transform:scaleX(0)}}
@@ -641,7 +665,7 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
 .stage::before{content:"";position:absolute;left:6%;right:6%;bottom:40px;height:2px;background:linear-gradient(90deg,transparent,var(--red) 20%,#ff8a95 50%,var(--red) 80%,transparent);box-shadow:0 0 18px 2px var(--redg);z-index:2;pointer-events:none}
 .hud{position:relative;display:grid;gap:10px;padding:12px;border-radius:10px;
   grid-template-columns:minmax(0,4.7fr) minmax(0,4.5fr) minmax(0,2.9fr);
-  grid-template-areas:"head head head" "kpi globe side" "bars globe side" "spike queue ring" "area feed digit" "budg budg budg";
+  grid-template-areas:"head head head" "night night night" "kpi globe side" "bars globe side" "spike queue ring" "area feed digit" "budg budg budg";
   background:linear-gradient(180deg,#0C0E13,#07080B 60%);border:1px solid rgba(255,42,61,.26);
   box-shadow:0 0 0 1px #000,0 40px 90px -30px rgba(255,30,50,.45),0 0 60px -20px rgba(255,42,61,.25),inset 0 1px 0 rgba(255,255,255,.06);transform-origin:50% 100%}
 .hud::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;background:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 3px)}
@@ -771,12 +795,12 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
 .empty-h{font:500 11px/1.5 var(--f-mono);color:var(--ink3);letter-spacing:.06em;padding:8px 0}
 
 @media (max-width:1180px){
-  .hud{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"head head" "globe globe" "side kpi" "queue ring" "bars spike" "area digit" "feed feed" "budg budg"}
+  .hud{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"head head" "night night" "globe globe" "side kpi" "queue ring" "bars spike" "area digit" "feed feed" "budg budg"}
   .globe-p{min-height:400px}
 }
 @media (max-width:620px){
   .stage{perspective:none;padding-bottom:34px}
-  .hud{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "digit" "globe" "side" "queue" "kpi" "ring" "bars" "spike" "area" "feed" "budg";padding:8px;gap:8px}
+  .hud{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "night" "digit" "globe" "side" "queue" "kpi" "ring" "bars" "spike" "area" "feed" "budg";padding:8px;gap:8px}
   .globe-p{min-height:330px}
   .hud-top{padding:18px 16px;min-height:0}
   .ht-title{font-size:38px;letter-spacing:.08em}
@@ -1343,6 +1367,18 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
       '<div class="ht-sub">'+hi+', Jenson · <b>'+S.need+' waiting on you</b> · '+ps.length+' projects · '+S.doneWk+' done this week</div></div></div>'+
       '<a class="ht-m" href="#milestones" style="text-decoration:none"><div class="row"><span>Rank</span><b>'+esc(S.rank)+'</b></div>'+segbar(S.xp,20)+'<div class="row"><span>'+(S.next?(S.next[0]-S.done)+' to '+esc(S.next[1]):'Top rank')+'</span><span>XP '+S.xp+'%</span></div></a>'+
       '<div class="ht-r"><button class="ht-voice" data-act="vxsay" data-v="brief">'+ico('wave')+'Brief me</button><div class="ht-date"><b>'+new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+'</b>'+live+'</div><div class="clock" id="hud-clock" aria-label="Time">'+clockTxt()+'</div></div></header>';
+    // night shift
+    var N=state.night||{},NR=nightLatest(),non=!!N.on,nrun=!!N.running,tm=function(x){return new Date(x).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})};
+    var nst=nrun?'<span class="ns-dot run"></span>Running now · wave '+(N.wave||1)+(N.lastStart?' · since '+tm(N.lastStart):''):non?'<span class="ns-dot on"></span>Armed · builds tonight from 22:30 in waves until dawn · report here at 07:00':'<span class="ns-dot"></span>Off · flip the switch and Claude builds through the night, then reports here in the morning';
+    var nb=NR?(NR.built||[]):[],nn=NR?(NR.needs||[]):[],nm=state.nightOpen?nb:nb.slice(0,4);
+    h+='<section class="hp night-p rise'+(non?' on':'')+'" style="--i:1" aria-label="Night Shift">'+
+      '<button class="ns-sw" type="button" role="switch" aria-checked="'+non+'" data-act="night" aria-label="Night Shift '+(non?'on':'off')+'"><span class="lb"><span>ON</span><span>OFF</span></span></button>'+
+      '<div class="ns-main"><div class="ns-t">Night <span>Shift</span> · '+(non?'ON':'OFF')+'</div><div class="ns-s">'+nst+'</div>'+(N.since?'<div class="ns-s" style="color:var(--ink3)">'+(non?'On':'Off')+' since '+rel(N.since)+'</div>':'')+'</div>'+
+      '<div class="ns-rep">'+(NR?'<div class="hp-t"><i></i>'+(nightFresh(NR)?'Last night':'Night of '+esc(NR.date||''))+' <em>// '+(NR.status==='running'?'in progress':nb.length+' built')+'</em></div><p>'+esc(NR.summary||'Report coming at 07:00.')+'</p>'+
+        (nm.length?'<ul>'+nm.map(function(x){return '<li><b>'+esc(pname(x.project))+'</b> · '+esc(x.text)+'</li>'}).join('')+'</ul>':'')+
+        (state.nightOpen&&nn.length?'<ul>'+nn.map(function(x){return '<li><b>Needs you</b> · '+esc(x.text||x)+'</li>'}).join('')+'</ul>':'')+
+        '<div class="ns-act"><button class="ht-voice" data-act="vxsay" data-v="night">'+ico('wave')+'Hear the report</button>'+(nb.length>4||nn.length?'<button class="btn ghost sm" type="button" data-act="nightmore">'+(state.nightOpen?'Less':'Everything')+'</button>':'')+'</div>'
+        :'<div class="hp-t"><i></i>No report yet</div><p style="color:var(--ink2)">The first morning report lands here after the first night the switch is on.</p>')+'</div></section>';
     // KPIs
     var K=[['projects','Active projects','of '+ps.length+' tracked',S.active,'#projects'],['board','Open to-dos','across every project',S.open,'#board'],
       ['needs','Needs you','your call or action',S.need,'#needs',S.need>0],['milestones','Done this week','goal '+gl,S.doneWk,'#milestones'],
@@ -1791,7 +1827,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
       td=new Date(),tk=td.getFullYear()+'-'+String(td.getMonth()+1).padStart(2,'0')+'-'+String(td.getDate()).padStart(2,'0'),due=open.filter(function(x){return x.due&&x.due<=tk}).length,
       bits=[need?need+' waiting on you':'Nothing waiting on you',due?due+' due today':''].filter(Boolean).join(' · ');
     var g=$('#greet');g.innerHTML='<div class="g-k">Incoming · '+td.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</div>'+
-      '<h2 id="greet-h">'+greetPart()+', Jenson.</h2><p>Would you like a briefing? '+esc(bits)+'.</p>'+
+      '<h2 id="greet-h">'+greetPart()+', Jenson.</h2><p>'+(function(){var nr=nightLatest();return nr&&nightFresh(nr)&&!nightHeard(nr)?'Your Night Shift report is in: '+(nr.built||[]).length+' built overnight. Hear it, then your briefing? ':'Would you like a briefing? '})()+esc(bits)+'.</p>'+
       '<div class="g-a"><button class="btn" type="button" data-act="greetyes">Yes, brief me</button><button class="btn ghost" type="button" data-act="greetno">No thanks</button></div>';
     g.hidden=false;clearTimeout(window.BH_greet.t);window.BH_greet.t=setTimeout(greetClose,45000)};
   document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(window.BH_greet,500)});
@@ -1852,6 +1888,19 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function n1(n,one,many){return n+' '+(n===1?one:many)}
   function dueWords(d){if(!d)return '';var t=today();if(d<t)return ', overdue since '+fmtDue(d);if(d===t)return ', due today';if(d===addDays(t,1))return ', due tomorrow';return ', due '+fmtDue(d)}
   function logs(){return state.log.slice().sort(newest)}
+  function nightLatest(){var a=(state.nights||[]).slice().sort(function(x,y){return (y.date||y.id)<(x.date||x.id)?-1:1});return a[0]||null}
+  function nightFresh(r){var e=new Date(r.ended||r.updated||r.started||r.date);return !isNaN(e)&&(Date.now()-e)<16*36e5}
+  function nightHeard(r){try{return localStorage.getItem('hub3.night')===r.date}catch(e){return false}}
+  function nightMark(r){try{localStorage.setItem('hub3.night',r.date)}catch(e){}}
+  function nightText(){var r=nightLatest();if(!r)return 'There is no Night Shift report yet. Flip the switch on the Command Centre and I will build through the night and report here in the morning.';
+    nightMark(r);var b=r.built||[],n=r.needs||[],t=nightFresh(r)?'Here is your Night Shift report. ':'Here is the Night Shift report from '+r.date+'. ';
+    if(r.status==='running')t+='The shift is still running. ';
+    t+=(r.summary||'')+' ';
+    if(b.length){t+='I built '+n1(b.length,'thing','things')+'. '+b.slice(0,12).map(function(x,i){return (i+1)+'. '+pname(x.project)+': '+x.text}).join('. ')+'. '+(b.length>12?'And '+(b.length-12)+' more in the written report. ':'')}
+    else if(r.status!=='running')t+='Nothing new was built. ';
+    if(n.length)t+=n1(n.length,'thing needs','things need')+' your decision: '+n.map(function(x){return x.text||x}).join('. ')+'. ';
+    if(r.waves&&r.waves.length)t+='That took '+n1(r.waves.length,'wave','waves')+' through the night. ';
+    t+='Everything is in the project folders and in the log, ready for you to review.';return t}
   function brief(){
     var S=stats(),n=needList(),hr=new Date().getHours(),h=(hr<12?'Morning':hr<18?'Afternoon':'Evening')+', Jenson. ';
     if(!state.db||!state.loadedAll&&!state.items.length)return h+'The live data is not connected yet, so I have nothing to read out.';
@@ -2007,11 +2056,15 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     else if(a==='vxopen')vxOpen();
     else if(a==='vxclose')vxClose();
     else if(a==='vxstop'){hush();if(smCtl){var c=smCtl;smCtl=null;c.abort();busy(false);$('#vx-out').hidden=true}}
-    else if(a==='greetyes'){greetClose();say(brief())}
+    else if(a==='greetyes'){greetClose();var nr=nightLatest();say(nr&&nightFresh(nr)&&!nightHeard(nr)?nightText()+' '+brief():brief())}
     else if(a==='greetno'){greetClose()}
+    else if(a==='night'){if(!state.db||!state.canWrite){toast(state.db?'You can read this hub but not change it.':'Live data is not connected yet.');return}var cur=state.night||{},nv=!cur.on,now=new Date().toISOString();
+      run(function(){return state.db.doc('settings/night').update({on:nv,since:now,changedBy:'hub'}).then(function(){return addLog('command-centre','Night Shift switched '+(nv?'on. Claude builds through the night from 22:30 and reports at 07:00.':'off.'),'status')})})
+        .then(function(){render(true);toast(nv?'Night Shift armed. Leave the Mac on and the Claude app open.':'Night Shift off.');if(nv){var r=b.getBoundingClientRect();confetti(r.left+r.width/2,r.top,18)}},function(){})}
+    else if(a==='nightmore'){state.nightOpen=!state.nightOpen;render(true)}
     else if(a==='vxsay'){var v=b.dataset.v;
       if(v==='next')vxNext();
-      else say(v==='needs'?needsText():v==='remind'?remindText():v==='updates'?updatesText():v==='page'?pageText():brief())}
+      else say(v==='night'?nightText():v==='needs'?needsText():v==='remind'?remindText():v==='updates'?updatesText():v==='page'?pageText():brief())}
     else if(a==='vxtg'){var k=b.dataset.v;VX[k]=!VX[k];vxSave();syncToggles();
       if(k==='live'&&VX.live)say('Live narration on. I will read out new updates and finished tasks as they land.');
       if(k==='nudge'&&VX.nudge){lastNudge=Date.now();say('Hourly reminder on. I will check in once an hour while the hub is open.')}}
@@ -2048,7 +2101,8 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
         schedule();
       },function(err){state.err=err&&err.code;clearTimeout(timer);schedule()});
     }
-    sub('projects');sub('items');sub('log');sub('budgets');
+    sub('projects');sub('items');sub('log');sub('budgets');sub('nights');
+    state.db.doc('settings/night').onSnapshot(function(sn){state.night=sn.exists?JSON.parse(JSON.stringify(sn.data()||{})):{};schedule()},function(){});
     state.db.doc('settings/hub').onSnapshot(function(sn){state.settings=sn.exists?JSON.parse(JSON.stringify(sn.data()||{})):null;schedule()},function(){});
   }
   if(window.claude&&window.claude.use){
