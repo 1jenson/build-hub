@@ -641,7 +641,7 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
 .stage::before{content:"";position:absolute;left:6%;right:6%;bottom:40px;height:2px;background:linear-gradient(90deg,transparent,var(--red) 20%,#ff8a95 50%,var(--red) 80%,transparent);box-shadow:0 0 18px 2px var(--redg);z-index:2;pointer-events:none}
 .hud{position:relative;display:grid;gap:10px;padding:12px;border-radius:10px;
   grid-template-columns:minmax(0,4.7fr) minmax(0,4.5fr) minmax(0,2.9fr);
-  grid-template-areas:"head head head" "night night night" "kpi globe side" "bars globe side" "spike queue ring" "area feed digit" "budg budg budg";
+  grid-template-areas:"head head head" "night night night" "chk chk chk" "kpi globe side" "bars globe side" "spike queue ring" "area feed digit" "budg budg budg";
   background:linear-gradient(180deg,#0C0E13,#07080B 60%);border:1px solid rgba(255,42,61,.26);
   box-shadow:0 0 0 1px #000,0 40px 90px -30px rgba(255,30,50,.45),0 0 60px -20px rgba(255,42,61,.25),inset 0 1px 0 rgba(255,255,255,.06);transform-origin:50% 100%}
 .hud::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;background:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 3px)}
@@ -730,6 +730,23 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
 @keyframes nsblink{50%{opacity:.35}}
 @media (max-width:900px){.ns-rep ul{columns:1}.ns-side{margin-left:0;flex:1 1 100%;justify-content:space-between}}
 
+.chk-p{grid-area:chk;background-image:linear-gradient(90deg,rgba(255,176,32,.08),transparent 50%)}
+.chk-p.hot{border-color:color-mix(in srgb,var(--amber,#f5a524) 45%,transparent)}
+.chk-p .ns-t span{color:var(--amber,#f5a524)}
+.chk-p .ns-btn:hover,.chk-p .ns-btn[aria-expanded=true]{border-color:color-mix(in srgb,var(--amber,#f5a524) 55%,transparent);background:rgba(255,176,32,.1)}
+.ck-ic{flex:none;width:30px;height:30px;border-radius:8px;border:2px solid color-mix(in srgb,var(--amber,#f5a524) 70%,transparent);background:rgba(255,176,32,.12);position:relative;box-shadow:0 0 14px -4px var(--amber,#f5a524)}
+.ck-ic::after{content:"";position:absolute;left:8px;top:3px;width:7px;height:13px;border:solid var(--amber,#f5a524);border-width:0 2.4px 2.4px 0;transform:rotate(45deg)}
+.ns-side>.ns-s{max-width:380px}
+.ck-list ul{columns:1;margin:2px 0 0}
+.ck-list li.ck{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.ck .cb{width:22px;height:22px;border-radius:6px;cursor:pointer}
+.ck .cb:hover{border-color:var(--amber,#f5a524)}
+.ck .tx{font-size:13px;line-height:1.35;color:var(--ink);text-decoration:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ck .tx:hover{color:var(--red2)}
+.ck .ds{font:500 10px/1.3 var(--f-mono);color:var(--ink3);white-space:nowrap;letter-spacing:.06em;text-transform:uppercase}
+.ck .ds.late{color:var(--red2)}.ck .ds.need{color:var(--amber,#f5a524)}
+.ck-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;font:500 10px/1.3 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.ck-foot a{color:var(--red2);text-decoration:none}
 /* KPI list */
 .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
 .kpi{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:10px;padding:7px 6px;margin:0 -6px;border-radius:5px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.04)}
@@ -813,12 +830,12 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
 .empty-h{font:500 11px/1.5 var(--f-mono);color:var(--ink3);letter-spacing:.06em;padding:8px 0}
 
 @media (max-width:1180px){
-  .hud{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"head head" "night night" "globe globe" "side kpi" "queue ring" "bars spike" "area digit" "feed feed" "budg budg"}
+  .hud{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"head head" "night night" "chk chk" "globe globe" "side kpi" "queue ring" "bars spike" "area digit" "feed feed" "budg budg"}
   .globe-p{min-height:400px}
 }
 @media (max-width:620px){
   .stage{perspective:none;padding-bottom:34px}
-  .hud{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "night" "digit" "globe" "side" "queue" "kpi" "ring" "bars" "spike" "area" "feed" "budg";padding:8px;gap:8px}
+  .hud{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "night" "chk" "digit" "globe" "side" "queue" "kpi" "ring" "bars" "spike" "area" "feed" "budg";padding:8px;gap:8px}
   .globe-p{min-height:330px}
   .hud-top{padding:18px 16px;min-height:0}
   .ht-title{font-size:38px;letter-spacing:.08em}
@@ -1400,6 +1417,18 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
         (nb.length?'<ul>'+nb.map(function(x){return '<li><b>'+esc(pname(x.project))+'</b> · '+esc(x.text)+'</li>'}).join('')+'</ul>':'')+
         (nn.length?'<ul>'+nn.map(function(x){return '<li><b>Needs you</b> · '+esc(x.text||x)+'</li>'}).join('')+'</ul>':'')+
         '<div class="ns-act"><button class="ht-voice" data-act="vxsay" data-v="night">'+ico('wave')+'Hear the report</button></div></div>':'')+'</section>';
+    // priority checklist (slim strip; Open expands it)
+    var ckAll=state.items.filter(function(x){return x.kind==='todo'&&!x.done}),ckTd=today(),ckWk=dkey(Date.now()+7*864e5);
+    var ckRank=function(x){return x.due&&x.due<ckTd?0:x.waiting?1:x.due&&x.due<=ckWk?2:3};
+    ckAll.sort(function(a,b){var r=ckRank(a)-ckRank(b);if(r)return r;var da=a.due||'9',db=b.due||'9';return da<db?-1:da>db?1:byOrder(a,b)});
+    var ckLate=ckAll.filter(function(x){return ckRank(x)===0}).length,ckNeed=ckAll.filter(function(x){return x.waiting}).length,ck=ckAll.slice(0,8);
+    var ckSum=ckAll.length?ckAll.length+' to do'+(ckLate?' · '+ckLate+' overdue':'')+(ckNeed?' · '+ckNeed+' need you':''):'All clear · nothing open';
+    h+='<section class="hp night-p chk-p rise'+(ckLate||ckNeed?' hot':'')+'" style="--i:1" aria-label="Priority checklist"><span class="ck-ic" aria-hidden="true"></span>'+
+      '<div class="ns-main"><span class="ns-t">Priority <span>Checklist</span></span><span class="ns-s">'+ckSum+'</span></div>'+
+      '<div class="ns-side">'+(ck.length?'<span class="ns-s">Next: '+esc(ck[0].text)+'</span><button class="ns-btn" type="button" data-act="chkmore" aria-expanded="'+!!state.chkOpen+'">Open<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>':'')+'</div>'+
+      (state.chkOpen&&ck.length?'<div class="ns-rep ck-list"><ul>'+ck.map(function(it){var p=proj(it.project),r=ckRank(it),ds=r===0?'<span class="ds late">Late · '+fmtDue(it.due)+'</span>':it.waiting?'<span class="ds need">Needs you'+(it.due?' · '+fmtDue(it.due):'')+'</span>':it.due?'<span class="ds">Due '+fmtDue(it.due)+'</span>':'<span class="ds"></span>';
+        return '<li class="ck"'+(p?' style="'+pvar(p)+'"':'')+'><button class="cb" data-act="toggle" data-id="'+esc(it.id)+'" aria-pressed="false" aria-label="Mark done: '+esc(it.text)+'"></button><span class="tag">'+(p?code(p):'--')+'</span><a class="tx" href="#p-'+esc(it.project||'')+'" title="'+esc(it.text)+'">'+esc(it.text)+'</a>'+ds+'</li>'}).join('')+'</ul>'+
+        '<div class="ck-foot"><span>Top '+ck.length+' of '+ckAll.length+' · tick to mark done</span><a href="#needs">Needs you ›</a></div></div>':'')+'</section>';
     // KPIs
     var K=[['projects','Active projects','of '+ps.length+' tracked',S.active,'#projects'],['board','Open to-dos','across every project',S.open,'#board'],
       ['needs','Needs you','your call or action',S.need,'#needs',S.need>0],['milestones','Done this week','goal '+gl,S.doneWk,'#milestones'],
@@ -2083,6 +2112,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
       run(function(){return state.db.doc('settings/night').update({on:nv,since:now,changedBy:'hub'}).then(function(){return addLog('command-centre','Night Shift switched '+(nv?'on. Claude builds through the night from 22:30 and reports at 10:00.':'off.'),'status')})})
         .then(function(){render(true);toast(nv?'Night Shift armed. Leave the Mac on and the Claude app open.':'Night Shift off.');if(nv){var r=b.getBoundingClientRect();confetti(r.left+r.width/2,r.top,18)}},function(){})}
     else if(a==='nightmore'){state.nightOpen=!state.nightOpen;render(true)}
+      else if(a==='chkmore'){state.chkOpen=!state.chkOpen;render(true)}
     else if(a==='vxsay'){var v=b.dataset.v;
       if(v==='next')vxNext();
       else say(v==='night'?nightText():v==='needs'?needsText():v==='remind'?remindText():v==='updates'?updatesText():v==='page'?pageText():brief())}
