@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Local voice server for the Command Centre.
 
-Speaks any text in the voice of the reference clip at voices/jarvis.wav, using
-Chatterbox (free, MIT licence) on this Mac. Nothing leaves the machine.
+Speaks any text in the voice of the reference clip at voices/jarvis.wav (and its
+transcript voices/jarvis.txt), using F5-TTS (free) on this Mac. Nothing leaves the machine.
 
-Run:  ~/jarvis-voice/.venv/bin/python voice-server/server.py
+Run:  ~/jarvis-voice/.venv-f5/bin/python voice-server/server.py
 Then pick "Jarvis Local" in the Command Centre voice panel (Chrome on this Mac).
 """
 import hashlib, io, json, os, struct, sys, threading, wave
@@ -20,6 +20,8 @@ os.makedirs(CACHE, exist_ok=True)
 
 _model = None
 _lock = threading.Lock()
+REF_TXT = os.environ.get("JARVIS_REF_TEXT", os.path.splitext(REF)[0] + ".txt")
+STEPS = int(os.environ.get("JARVIS_STEPS", "16"))  # lower = faster; 14-32 sound much the same
 
 
 def load_model():
@@ -27,45 +29,48 @@ def load_model():
     if _model is not None:
         return _model
     import torch
-    from chatterbox.tts import ChatterboxTTS
+    from f5_tts.api import F5TTS
     dev = "mps" if torch.backends.mps.is_available() else "cpu"
-    # Chatterbox checkpoints were saved on CUDA; remap them when loading on Mac.
-    orig = torch.load
-    torch.load = lambda *a, **k: orig(*a, **{**k, "map_location": torch.device(dev)})
-    try:
-        _model = ChatterboxTTS.from_pretrained(device=dev)
-    finally:
-        torch.load = orig
+    _model = F5TTS(model="F5TTS_v1_Base", device=dev)
     print(f"model ready on {dev}", flush=True)
     if os.path.exists(REF):  # warm-up so the first real line is not slow
         try:
-            _model.generate("Ready.", audio_prompt_path=REF)
+            _model.infer(REF, ref_text(), "Ready.", nfe_step=STEPS, seed=7, show_info=lambda *a: None, progress=None)
             print("warm", flush=True)
         except Exception as e:
             print("warm-up failed:", e, flush=True)
     return _model
 
 
+def ref_text():
+    try:
+        return open(REF_TXT).read().strip()
+    except OSError:
+        return ""  # F5 transcribes the clip itself (downloads a small speech model once)
+
+
 def to_wav(samples, sr):
-    pcm = io.BytesIO()
-    with wave.open(pcm, "wb") as w:
+    import numpy as np
+    pcm = (np.clip(np.asarray(samples, dtype="float32"), -1, 1) * 32767).astype("<i2").tobytes()
+    out = io.BytesIO()
+    with wave.open(out, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(sr)
-        w.writeframes(b"".join(struct.pack("<h", max(-32768, min(32767, int(s * 32767)))) for s in samples))
-    return pcm.getvalue()
+        w.writeframes(pcm)
+    return out.getvalue()
 
 
-def synth(text, exaggeration=0.45, cfg=0.5):
-    ref_stamp = str(os.path.getmtime(REF))
-    key = hashlib.sha1(f"{text}|{exaggeration}|{cfg}|{ref_stamp}".encode()).hexdigest()
+def synth(text):
+    stamp = str(os.path.getmtime(REF)) + ref_text() + str(STEPS)
+    key = hashlib.sha1(f"{text}|{stamp}".encode()).hexdigest()
     path = os.path.join(CACHE, key + ".wav")
     if os.path.exists(path):
         return open(path, "rb").read()
     with _lock:
         m = load_model()
-        wav = m.generate(text, audio_prompt_path=REF, exaggeration=exaggeration, cfg_weight=cfg)
-        data = to_wav(wav.squeeze().cpu().numpy().tolist(), m.sr)
+        wav, sr, _ = m.infer(REF, ref_text(), text, nfe_step=STEPS, seed=7, show_info=lambda *a: None, progress=None)
+        data = to_wav(wav, sr)
     open(path, "wb").write(data)
     return data
 
