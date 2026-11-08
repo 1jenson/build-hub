@@ -1050,6 +1050,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
       <button type="button" class="tg" data-act="vxtg" data-v="live" aria-pressed="false"><span>Narrate live changes<small>Speak new updates and finished tasks as they land</small></span></button>
       <button type="button" class="tg" data-act="vxtg" data-v="nudge" aria-pressed="false"><span>Hourly reminder<small>A short nudge about what needs you, while the hub is open</small></span></button>
       <button type="button" class="tg" data-act="vxtg" data-v="auto" aria-pressed="true"><span>Read answers aloud<small>Speak replies from Talk it through</small></span></button>
+      <button type="button" class="tg" data-act="vxtg" data-v="hdq" aria-pressed="false"><span>Sharper Jarvis HD<small>Full-quality model for Jarvis HD. About 330 MB once, best on a Mac</small></span></button>
     </div>
     <div class="vx-set"><label><span class="label">Voice</span><select class="field" id="vx-voice" aria-label="Voice"></select></label><label><span class="label">Speed <b id="vx-rv">1.0×</b></span><input type="range" id="vx-rate" min="0.7" max="1.5" step="0.05" value="1"></label></div>
     <div class="vx-set"><label><span class="label">Pitch <b id="vx-pv">1.0</b></span><input type="range" id="vx-pitch" min="0.6" max="1.2" step="0.05" value="1"></label><button type="button" class="btn ghost" data-act="vxtest" id="vx-test">Test voice</button></div>
@@ -1867,7 +1868,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   }
 
   /* ---------- v7: voice narrator ---------- */
-  var VX={live:false,nudge:false,auto:true,voice:'',rate:1,pitch:null};
+  var VX={live:false,nudge:false,auto:true,voice:'',rate:1,pitch:null,hdq:false};
   try{var vt=JSON.parse(localStorage.getItem('hub3.voice')||'{}');Object.keys(VX).forEach(function(k){if(vt[k]!=null)VX[k]=vt[k]})}catch(e){}
   function greetPart(){var h=new Date().getHours();return h<12?'Morning':h<18?'Afternoon':'Evening'}
   function greetKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+':'+greetPart()}
@@ -1885,7 +1886,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(window.BH_greet,500)});
   function vxSave(){try{localStorage.setItem('hub3.voice',JSON.stringify(VX))}catch(e){}}
   var syn=('speechSynthesis' in window)?window.speechSynthesis:null,voices=[],speaking=false,vxQ=0,lastNudge=Date.now();
-  var HD={state:'idle',tts:null,ctx:null,src:null,chain:Promise.resolve(),pct:0,files:{}};
+  var HD={state:'idle',tts:null,ctx:null,src:null,chain:Promise.resolve(),pct:0,files:{},gen:0,fx:null};
   var HDV={'bm_george':'George','bm_fable':'Fable','bm_lewis':'Lewis','bm_daniel':'Daniel'};
   var vTries=0;
   function vlabel(v){var n=v.name;if(!/enhanced|premium|siri|natural/i.test(n))n=n.replace(/\s*\(.*\)$/,'');return n}
@@ -1953,23 +1954,38 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   }
   /* Jarvis HD: Kokoro runs in this browser (free, no key). Opt-in; one-off ~90 MB download, then cached */
   function hdVoice(){var m=/^hd:(\w+)$/.exec(VX.voice||'');return m&&HDV[m[1]]?m[1]:''}
-  function hdCtx(){try{if(!HD.ctx){var C=window.AudioContext||window.webkitAudioContext;if(C)HD.ctx=new C()}}catch(e){}return HD.ctx}
+  function hdCtx(){try{if(!HD.ctx){var C=window.AudioContext||window.webkitAudioContext;if(C){var c=new C();HD.ctx=c;
+      /* gentle clarity chain: cut rumble, lift presence and air, light levelling */
+      var hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=70;
+      var pk=c.createBiquadFilter();pk.type='peaking';pk.frequency.value=3200;pk.Q.value=0.9;pk.gain.value=2.5;
+      var hs=c.createBiquadFilter();hs.type='highshelf';hs.frequency.value=6500;hs.gain.value=3;
+      var cp=c.createDynamicsCompressor();cp.threshold.value=-20;cp.knee.value=24;cp.ratio.value=2.5;cp.attack.value=0.005;cp.release.value=0.2;
+      hp.connect(pk);pk.connect(hs);hs.connect(cp);cp.connect(c.destination);HD.fx=hp}}}catch(e){}return HD.ctx}
+  /* trim silence at the edges, fade in and out (no clicks), even out the level */
+  function hdPrep(a){
+    var x=a.audio,sr=a.sampling_rate||24000,n=x.length,th=0.004,pad=Math.round(sr*0.04),i=0,j=n-1,pk=0;
+    while(i<n&&Math.abs(x[i])<th)i++;while(j>i&&Math.abs(x[j])<th)j--;
+    i=Math.max(0,i-pad);j=Math.min(n-1,j+pad);
+    var y=new Float32Array(Math.max(1,j-i+1));for(var k=0;k<y.length;k++){y[k]=x[i+k];var v=Math.abs(y[k]);if(v>pk)pk=v}
+    var g=pk>0.01&&pk<0.85?0.88/pk:1,f=Math.min(Math.round(sr*0.012),y.length>>1);
+    for(k=0;k<y.length;k++){var m=g;if(k<f)m*=k/f;else if(y.length-1-k<f)m*=(y.length-1-k)/f;y[k]*=m}
+    return {audio:y,sampling_rate:sr}}
   function hdUnlock(){try{var c=hdCtx();if(c&&c.state==='suspended')c.resume()}catch(e){}}
   function hdStop(){try{if(HD.src){HD.src.stop()}}catch(e){}HD.src=null}
   function hdLoad(){
     if(HD.state==='loading'||HD.state==='ready')return HD.p;
-    HD.state='loading';HD.pct=0;HD.files={};vNote();
+    var gen=++HD.gen;HD.state='loading';HD.pct=0;HD.files={};vNote();
     HD.p=import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm').then(function(m){
-      return m.KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX',{dtype:'q8',device:'wasm',progress_callback:function(e){
+      return m.KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX',{dtype:VX.hdq?'fp32':'q8',device:'wasm',progress_callback:function(e){if(gen!==HD.gen)return;
         if(e&&e.file&&e.total){HD.files[e.file]=[e.loaded||0,e.total];var l=0,t=0;for(var k in HD.files){l+=HD.files[k][0];t+=HD.files[k][1]}HD.pct=t?Math.min(99,Math.round(l/t*100)):0;vNote()}}});
-    }).then(function(t){HD.tts=t;HD.state='ready';vNote()},function(){HD.state='error';HD.tts=null;vNote()});
+    }).then(function(t){if(gen!==HD.gen)return;HD.tts=t;HD.state='ready';vNote()},function(){if(gen!==HD.gen)return;HD.state='error';HD.tts=null;vNote()});
     return HD.p;
   }
   function hdGen(text){return HD.tts.generate(text,{voice:hdVoice()||'bm_george',speed:(+VX.rate||1)}).then(function(a){return a},function(){return null})}
   function hdPlay(a){return new Promise(function(res){
     var c=hdCtx();if(!c||!a||!a.audio){res();return}
-    try{var b=c.createBuffer(1,a.audio.length,a.sampling_rate||24000);b.copyToChannel(a.audio,0);
-      var s=c.createBufferSource();s.buffer=b;s.connect(c.destination);HD.src=s;s.onended=function(){res()};s.start()}catch(e){res()}
+    try{a=hdPrep(a);var b=c.createBuffer(1,a.audio.length,a.sampling_rate||24000);b.copyToChannel(a.audio,0);
+      var s=c.createBufferSource();s.buffer=b;s.connect(HD.fx||c.destination);HD.src=s;s.onended=function(){res()};s.start()}catch(e){res()}
   })}
   function hdSpeak(list,my,text){
     HD.chain=HD.chain.then(function(){
@@ -2199,6 +2215,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
       if(v==='next')vxNext();
       else say(v==='night'?nightText():v==='needs'?needsText():v==='remind'?remindText():v==='updates'?updatesText():v==='page'?pageText():brief())}
     else if(a==='vxtg'){var k=b.dataset.v;VX[k]=!VX[k];vxSave();syncToggles();
+      if(k==='hdq'){HD.gen++;HD.state='idle';HD.tts=null;HD.p=null;hdStop();if(hdVoice()){hdUnlock();hdLoad().then(function(){if(hdVoice()&&HD.state==='ready')say(testLine())})}vNote()}
       if(k==='live'&&VX.live)say('Live narration on. I will read out new updates and finished tasks as they land.');
       if(k==='nudge'&&VX.nudge){lastNudge=Date.now();say('Hourly reminder on. I will check in once an hour while the hub is open.')}}
     else if(a==='vxtest')say(testLine());
