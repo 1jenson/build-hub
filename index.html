@@ -1885,6 +1885,8 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(window.BH_greet,500)});
   function vxSave(){try{localStorage.setItem('hub3.voice',JSON.stringify(VX))}catch(e){}}
   var syn=('speechSynthesis' in window)?window.speechSynthesis:null,voices=[],speaking=false,vxQ=0,lastNudge=Date.now();
+  var HD={state:'idle',tts:null,ctx:null,src:null,chain:Promise.resolve(),pct:0,files:{}};
+  var HDV={'bm_george':'George','bm_fable':'Fable','bm_lewis':'Lewis','bm_daniel':'Daniel'};
   var vTries=0;
   function vlabel(v){var n=v.name;if(!/enhanced|premium|siri|natural/i.test(n))n=n.replace(/\s*\(.*\)$/,'');return n}
   /* Jarvis preset: best British male voice on this device (Enhanced/Premium/Siri first) */
@@ -1913,8 +1915,8 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     if(!voices.length&&vTries<12){vTries++;setTimeout(loadVoices,400)}
     var sel=$('#vx-voice');if(!sel)return;
     var j=jarvisVoice();
-    sel.innerHTML='<option value="jarvis">Jarvis · British butler'+(j?' ('+esc(vlabel(j))+')':'')+'</option>'+voices.map(function(v){return '<option value="'+esc(v.name)+'">'+esc(vlabel(v))+' · '+esc(v.lang)+'</option>'}).join('');
-    var pv=pickVoice();sel.value=pv.jarvis?'jarvis':pv.v.name;
+    sel.innerHTML='<option value="jarvis">Jarvis · British butler'+(j?' ('+esc(vlabel(j))+')':'')+'</option>'+Object.keys(HDV).map(function(k){return '<option value="hd:'+k+'">Jarvis HD · '+HDV[k]+' (free, ~90 MB once)</option>'}).join('')+voices.map(function(v){return '<option value="'+esc(v.name)+'">'+esc(vlabel(v))+' · '+esc(v.lang)+'</option>'}).join('');
+    var pv=pickVoice();sel.value=hdVoice()?'hd:'+hdVoice():(pv.jarvis?'jarvis':pv.v.name);
     vNote();
   }
   if(syn){loadVoices();if(syn.addEventListener)syn.addEventListener('voiceschanged',loadVoices);else syn.onvoiceschanged=loadVoices}
@@ -1928,6 +1930,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function vPitch(pv){return VX.pitch!=null&&VX.pitch!==''?+VX.pitch:(pv.jarvis?0.85:1)}
   function vNote(){
     var el=$('#vx-vnote');if(!el)return;
+    if(hdVoice()){el.textContent=HD.state==='loading'?'Downloading Jarvis HD'+(HD.pct?' '+HD.pct+'%':'')+'. It runs on this device and is cached after the first time. The system Jarvis voice speaks until then.':HD.state==='error'?'Jarvis HD could not load, so the system Jarvis voice is used instead.':HD.state==='ready'?'Jarvis HD is on (Kokoro, running on this device). Pitch does not apply.':'Jarvis HD loads the first time it speaks.';return}
     if(!syn){el.textContent='';return}
     var pv=pickVoice();
     el.textContent=pv.jarvis?(pv.v?'Jarvis is using '+vlabel(pv.v)+' ('+pv.v.lang+'), pitch lower and a touch slower. For a richer sound, download Daniel or Oliver (Enhanced) in System Settings, Accessibility, Spoken Content.':'No voices found yet, so the device default will be used.'):'';
@@ -1948,23 +1951,67 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     $('#vx-stop').hidden=!on;
     if(!smCtl)$('#vx-st').textContent=on?'Speaking…':(syn?'Ready':'This browser cannot speak');
   }
-  function say(text,opt){
-    opt=opt||{};text=clean(text);if(!text)return;
-    $('#vx-cap').textContent=text;
-    if(!syn){toast('This browser cannot speak. The text is in the voice panel.');return}
-    if(!opt.queue||!speaking){syn.cancel();vxQ++}
-    var my=vxQ,list=chunks(text),pv=pickVoice(),v=pv.v,pitch=vPitch(pv),rate=(+VX.rate||1)*(pv.jarvis?0.95:1);
+  /* Jarvis HD: Kokoro runs in this browser (free, no key). Opt-in; one-off ~90 MB download, then cached */
+  function hdVoice(){var m=/^hd:(\w+)$/.exec(VX.voice||'');return m&&HDV[m[1]]?m[1]:''}
+  function hdCtx(){try{if(!HD.ctx){var C=window.AudioContext||window.webkitAudioContext;if(C)HD.ctx=new C()}}catch(e){}return HD.ctx}
+  function hdUnlock(){try{var c=hdCtx();if(c&&c.state==='suspended')c.resume()}catch(e){}}
+  function hdStop(){try{if(HD.src){HD.src.stop()}}catch(e){}HD.src=null}
+  function hdLoad(){
+    if(HD.state==='loading'||HD.state==='ready')return HD.p;
+    HD.state='loading';HD.pct=0;HD.files={};vNote();
+    HD.p=import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm').then(function(m){
+      return m.KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX',{dtype:'q8',device:'wasm',progress_callback:function(e){
+        if(e&&e.file&&e.total){HD.files[e.file]=[e.loaded||0,e.total];var l=0,t=0;for(var k in HD.files){l+=HD.files[k][0];t+=HD.files[k][1]}HD.pct=t?Math.min(99,Math.round(l/t*100)):0;vNote()}}});
+    }).then(function(t){HD.tts=t;HD.state='ready';vNote()},function(){HD.state='error';HD.tts=null;vNote()});
+    return HD.p;
+  }
+  function hdGen(text){return HD.tts.generate(text,{voice:hdVoice()||'bm_george',speed:(+VX.rate||1)}).then(function(a){return a},function(){return null})}
+  function hdPlay(a){return new Promise(function(res){
+    var c=hdCtx();if(!c||!a||!a.audio){res();return}
+    try{var b=c.createBuffer(1,a.audio.length,a.sampling_rate||24000);b.copyToChannel(a.audio,0);
+      var s=c.createBufferSource();s.buffer=b;s.connect(c.destination);HD.src=s;s.onended=function(){res()};s.start()}catch(e){res()}
+  })}
+  function hdSpeak(list,my,text){
+    HD.chain=HD.chain.then(function(){
+      var next=null,i=0,ok=true;
+      function step(){
+        if(my!==vxQ||i>=list.length)return;
+        var cur=next||hdGen(list[i]);next=i+1<list.length?hdGen(list[i+1]):null;
+        return cur.then(function(a){
+          if(my!==vxQ)return;
+          if(!a){ok=false;HD.state='error';vNote();sysSpeak(list.slice(i),my);return}
+          setSpeaking(true,list[i]);i++;
+          return hdPlay(a).then(step)});
+      }
+      return step();
+    }).then(function(){if(my===vxQ&&!syn_busy())setSpeaking(false)},function(){if(my===vxQ)setSpeaking(false)});
+  }
+  function syn_busy(){return !!(syn&&(syn.speaking||syn.pending))}
+  function sysSpeak(list,my,text){
+    if(!syn)return;
+    var pv=pickVoice(),v=pv.v,pitch=vPitch(pv),rate=(+VX.rate||1)*(pv.jarvis?0.95:1);
     list.forEach(function(c,i){
       var u;try{u=new SpeechSynthesisUtterance(c)}catch(e){return}
       if(v){u.voice=v;u.lang=v.lang}else u.lang='en-GB';
       u.rate=rate;u.pitch=pitch;
-      u.onstart=function(){if(my===vxQ){setSpeaking(true,c);$('#vx-cap').textContent=text}};
+      u.onstart=function(){if(my===vxQ){setSpeaking(true,c);if(text)$('#vx-cap').textContent=text}};
       u.onend=u.onerror=function(){if(my===vxQ&&i===list.length-1)setTimeout(function(){if(my===vxQ&&!syn.speaking&&!syn.pending)setSpeaking(false)},60)};
       try{syn.speak(u)}catch(e){}
     });
+  }
+  function say(text,opt){
+    opt=opt||{};text=clean(text);if(!text)return;
+    $('#vx-cap').textContent=text;
+    var hd=!!hdVoice();
+    if(!syn&&!(hd&&HD.state==='ready')){toast('This browser cannot speak. The text is in the voice panel.');return}
+    if(!opt.queue||!speaking){if(syn)syn.cancel();hdStop();vxQ++}
+    var my=vxQ,list=chunks(text);
+    if(hd&&HD.state!=='ready')hdLoad(); /* first use: system Jarvis speaks while HD loads */
+    if(hd&&HD.state==='ready'){hdSpeak(list,my,text)}
+    else sysSpeak(list,my,text);
     setSpeaking(true,list[0]);
   }
-  function hush(){if(syn)syn.cancel();vxQ++;setSpeaking(false)}
+  function hush(){if(syn)syn.cancel();hdStop();vxQ++;setSpeaking(false)}
 
   /* narration text */
   function pname(id){var p=proj(id);return p?p.name:'General'}
@@ -2173,7 +2220,10 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   $('#vx-form').addEventListener('submit',function(e){e.preventDefault();if(smCtl){var c=smCtl;smCtl=null;c.abort();busy(false);return}ask($('#vx-in').value)});
   $('#vx-in').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#vx-form').requestSubmit?$('#vx-form').requestSubmit():ask($('#vx-in').value)}});
   function testLine(){return 'Good '+greetPart().toLowerCase()+', Jenson. Command Centre online, and all systems are running.'}
-  $('#vx-voice').addEventListener('change',function(e){VX.voice=e.target.value;vxSave();syncToggles();say(testLine())});
+  $('#vx-voice').addEventListener('change',function(e){VX.voice=e.target.value;vxSave();syncToggles();
+    if(hdVoice()){hdUnlock();hdLoad().then(function(){if(hdVoice()&&HD.state==='ready')say(testLine())});vNote();return}
+    say(testLine())});
+  document.addEventListener('click',hdUnlock,true);
   $('#vx-pitch').addEventListener('input',function(e){VX.pitch=+e.target.value;$('#vx-pv').textContent=(+e.target.value).toFixed(2).replace(/0$/,'')});
   $('#vx-pitch').addEventListener('change',function(){vxSave();say('This is my new pitch.')});
   $('#vx-rate').addEventListener('input',function(e){VX.rate=+e.target.value;syncToggles()});
