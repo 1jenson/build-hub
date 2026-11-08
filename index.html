@@ -34,6 +34,8 @@ img{max-width:100%}[hidden]{display:none!important}
 .bg-alt{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
 .bg-alt button,.bh-out{background:none;border:0;color:#AAB0BD;font:500 14px/1.2 "Instrument Sans",system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:8px 0}
 .bh-out{align-self:flex-start;font-size:12px;color:#767C8B}
+.bh-extra{display:flex;flex-wrap:wrap;gap:2px 18px;align-self:stretch}.bh-extra .bh-out{font-size:13px;color:#AAB0BD}.bh-extra .bh-out[hidden]{display:none}
+#more .bh-extra{padding:6px 4px 2px}#more .bh-extra .bh-out{font-size:15px}
 </style>
 <script>window.BH_CFG={"url": "https://pueaklvxhmnghirehtxh.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1ZWFrbHZ4aG1uZ2hpcmVodHhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxMDQxNTgsImV4cCI6MjEwOTY4MDE1OH0.dTSPTxkqzMAwpvIV7YPSUB4ikRHDp39pbIon6lDu8g4"};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -172,9 +174,67 @@ img{max-width:100%}[hidden]{display:none!important}
   }
   function addSignOut() {
     var mk = function () { var b = document.createElement('button'); b.type = 'button'; b.className = 'bh-out'; b.textContent = 'Sign out'; b.addEventListener('click', window.BH_signOut); return b; };
-    var f = document.querySelector('.side-foot'); if (f) f.appendChild(mk());
+    var f = document.querySelector('.side-foot');
+    if (f) { var w = document.createElement('div'); w.className = 'bh-extra'; w.innerHTML = extrasHtml(); f.appendChild(w); f.appendChild(mk()); pushLabel(); }
     var v = document.querySelector('#vx .sheet, #vx section'); if (v) v.appendChild(mk());
   }
+
+  /* ---------- backup + morning alerts ---------- */
+  function toast(t) { var e = document.getElementById('toast'); if (!e) return; e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { e.hidden = true; }, 4200); }
+  function extrasHtml() {
+    return '<button type="button" class="bh-out" data-bh="backup">Back up data</button>' +
+      '<button type="button" class="bh-out" data-bh="push">Morning alerts</button>' +
+      '<button type="button" class="bh-out" data-bh="pushtest" hidden>Send test alert</button>';
+  }
+  window.BH_extras = function () { setTimeout(pushLabel, 0); return '<div class="bh-extra">' + extrasHtml() + '</div>'; };
+  function backup() {
+    if (!uid) return toast('Sign in first.');
+    sb.from(T).select('col,id,data,updated_at').then(function (r) {
+      if (r.error) return toast('Backup failed: ' + r.error.message);
+      var d = new Date(), n = 'build-hub-backup-' + d.toISOString().slice(0, 10) + '.json';
+      var blob = new Blob([JSON.stringify({ app: 'Build Hub', at: d.toISOString(), rows: r.data }, null, 2)], { type: 'application/json' });
+      var file = typeof File === 'function' ? new File([blob], n, { type: 'application/json' }) : null;
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: n }).then(function () { toast('Backup saved (' + r.data.length + ' records).'); }, function () {});
+      } else {
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = n; document.body.appendChild(a); a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('Backup downloaded (' + r.data.length + ' records).');
+      }
+    });
+  }
+  var canPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  function curSub() { return canPush ? navigator.serviceWorker.ready.then(function (r) { return r.pushManager.getSubscription(); }) : Promise.resolve(null); }
+  function pushLabel() {
+    curSub().then(function (s) {
+      document.querySelectorAll('[data-bh="push"]').forEach(function (b) { b.textContent = s ? 'Morning alerts: on' : 'Morning alerts: off'; b.setAttribute('aria-pressed', String(!!s)); });
+      document.querySelectorAll('[data-bh="pushtest"]').forEach(function (b) { b.hidden = !s; });
+    }, function () {});
+  }
+  function b64(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); }
+  function fn(body) { return sb.functions.invoke('hub-push', { body: body }).then(function (r) { if (r.error) throw r.error; return r.data; }); }
+  function pushToggle() {
+    if (!uid) return toast('Sign in first.');
+    if (!canPush) return toast(/iPhone|iPad/.test(navigator.userAgent) ? 'On iPhone, add Build Hub to your Home Screen first (Share, then Add to Home Screen), then open it from there.' : 'This browser cannot show alerts.');
+    curSub().then(function (s) {
+      if (s) return s.unsubscribe().then(function () { return sb.from('hub_push_subs').delete().eq('endpoint', s.endpoint); }).then(function () { toast('Morning alerts off.'); pushLabel(); });
+      return Notification.requestPermission().then(function (p) {
+        if (p !== 'granted') throw new Error('Alerts were not allowed. You can allow them in your settings.');
+        return fn({ action: 'key' });
+      }).then(function (d) {
+        return navigator.serviceWorker.ready.then(function (r) { return r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(d.key) }); });
+      }).then(function (sub) {
+        return sb.from('hub_push_subs').upsert({ owner: uid, endpoint: sub.endpoint, sub: sub.toJSON(), ua: navigator.userAgent.slice(0, 200) }, { onConflict: 'owner,endpoint' })
+          .then(function (r) { if (r.error) throw r.error; return fn({ action: 'test' }); });
+      }).then(function () { toast('Morning alerts on. A preview is on its way; the real one comes at 8am.'); pushLabel(); });
+    }).catch(function (e) { toast((e && e.message) || 'Could not change alerts.'); pushLabel(); });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-bh]'); if (!b) return;
+    var a = b.dataset.bh;
+    if (a === 'backup') backup();
+    else if (a === 'push') pushToggle();
+    else if (a === 'pushtest') fn({ action: 'test' }).then(function (d) { toast(d && d.sent ? 'Test alert sent.' : 'No alert sent. Try turning alerts off and on.'); }, function (e) { toast(e.message || 'Test failed.'); });
+  });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
@@ -224,7 +284,7 @@ a{color:inherit}
 .side{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;height:100vh;padding-block:24px;display:flex;flex-direction:column;gap:22px;overflow:auto;scrollbar-width:none}
 .brand{display:flex;align-items:center;gap:12px;padding:0 8px;text-decoration:none}
 .brand .mk{width:36px;height:36px;border-radius:10px;background:var(--amber);display:grid;place-items:center;color:var(--amber-ink);font:900 15px/1 var(--f-display);font-stretch:125%;box-shadow:0 0 0 4px color-mix(in srgb,var(--amber) 18%,transparent)}
-.brand b{font:800 19px/1 var(--f-display);font-stretch:118%;letter-spacing:-.01em;display:block}
+.brand b{font:800 18px/1.05 var(--f-display);font-stretch:110%;letter-spacing:-.01em;display:block}
 .brand small{font:500 10px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
 .srch{position:relative}
 .srch .ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink3);width:16px;height:16px}
@@ -455,6 +515,14 @@ a.tile:hover{transform:translateY(-3px);border-color:var(--line2)}
 .bud h3{font-size:17px;font-weight:700;font-stretch:105%;line-height:1.25}
 .bud .amt{font:800 26px/1 var(--f-display);font-stretch:85%;font-variant-numeric:tabular-nums}
 .bud .note{color:var(--ink2);font-size:13.5px}
+.chk{display:inline-flex;align-items:center;gap:6px;font:500 11.5px/1.2 var(--f-mono);letter-spacing:.04em;color:var(--ink3)}
+.chk::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.chk.old{color:var(--warn)}.chk.old::before{background:var(--warn)}
+.bud .acts{display:flex;gap:8px;flex-wrap:wrap}
+.bud form.bedit{display:grid;grid-template-columns:1fr 1fr;gap:8px}.bud form.bedit label{display:grid;gap:4px;font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.bud form.bedit input{min-width:0;font-size:16px}.bud form.bedit .acts{grid-column:1/-1}
+.moved{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:16px;border:1px solid var(--red);background:color-mix(in oklab,var(--red) 14%,var(--surface));font-size:15px}
+.moved b{font-size:16px}
 .brow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
 .brow:first-of-type{border-top:0;padding-top:0}
 .brow .bar{grid-column:1/-1}
@@ -516,6 +584,16 @@ a.tile:hover{transform:translateY(-3px);border-color:var(--line2)}
 .qa-recent{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .qa-recent li{font-size:13.5px;color:var(--ink2);display:flex;gap:8px;align-items:center;animation:slide .3s ease}
 .qa-recent li::before{content:"✓";color:var(--ok);font-weight:700}
+.greet{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:65;width:min(calc(100vw - 32px),460px);background:color-mix(in oklab,var(--bg2) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--red);border-radius:18px;padding:18px 20px 16px;box-shadow:0 0 0 1px rgba(255,42,61,.15),0 0 28px rgba(255,42,61,.28),var(--shadow);display:grid;gap:8px;animation:greetIn .45s cubic-bezier(.2,.9,.25,1)}
+.greet .g-k{font:500 11px/1 var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--red2);display:flex;align-items:center;gap:8px}
+.greet .g-k::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red);animation:gPulse 1.4s ease-in-out infinite}
+.greet h2{margin:2px 0 0;font:700 30px/1.05 var(--f-display);letter-spacing:.02em;text-wrap:balance}
+.greet p{margin:0;color:var(--ink2);font-size:15px}
+.greet .g-a{display:flex;gap:10px;margin-top:8px}.greet .g-a .btn{flex:1 1 0;min-width:0;justify-content:center;min-height:44px;font-size:15px;padding-inline:12px;white-space:nowrap}
+.greet.out{animation:greetOut .25s ease forwards}
+@keyframes greetIn{from{opacity:0;transform:translate(-50%,-14px) scale(.97)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes greetOut{to{opacity:0;transform:translate(-50%,-10px) scale(.98)}}
+@keyframes gPulse{50%{opacity:.35}}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;z-index:60;max-width:min(92vw,460px);font-weight:500;box-shadow:var(--shadow);animation:pop .2s ease}
 .cf{position:fixed;width:9px;height:9px;border-radius:2px;pointer-events:none;z-index:70;animation:cf 1s cubic-bezier(.1,.7,.3,1) forwards}
 @keyframes cf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
@@ -585,9 +663,9 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
 .stars{display:flex;gap:3px;flex:none}
 .stars svg{width:20px;height:20px;fill:#2A2E38;stroke:none}
 .stars svg.on{fill:var(--red);filter:drop-shadow(0 0 5px var(--red)) drop-shadow(0 0 12px rgba(255,42,61,.5))}
-.ht-title{font:700 24px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.ht-title{font:700 clamp(30px,3.4vw,46px)/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .ht-title span{color:var(--red);text-shadow:0 0 14px var(--redg);font-weight:500;letter-spacing:.1em}
-.ht-sub{font:500 11px/1.4 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-top:7px}
+.ht-sub{font:500 13px/1.45 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin-top:10px}
 .ht-sub b{color:var(--red2);font-weight:500}
 .ht-m{flex:0 1 230px;min-width:170px;display:flex;flex-direction:column;gap:7px}
 .ht-m .row{display:flex;justify-content:space-between;font:500 10.5px/1 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
@@ -691,8 +769,9 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
   .hud{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "digit" "globe" "side" "queue" "kpi" "ring" "bars" "spike" "area" "feed" "budg";padding:8px;gap:8px}
   .globe-p{min-height:330px}
   .hud-top{padding:12px}
-  .ht-title{font-size:19px;letter-spacing:.08em}
-  .ht-title span{display:block;margin-top:4px;font-size:13px}
+  .ht-title{font-size:34px;letter-spacing:.08em}
+  .ht-title span{display:block;margin-top:6px}
+  .ht-sub{font-size:12px}
   .ht-m{max-width:none}
   .ht-l{flex-direction:column;align-items:flex-start;gap:10px}.globe-p .hp-h>.hp-t:last-child{display:none}
   .clock{font-size:24px}
@@ -866,7 +945,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
 
 <div class="app">
   <aside class="side" aria-label="Navigation">
-    <a class="brand" href="#home"><span class="mk">BH</span><span><b>Build Hub</b><small>Jenson's workshop</small></span></a>
+    <a class="brand" href="#home"><span class="mk">BH</span><span><b>Command Centre</b><small>Jenson's workshop</small></span></a>
     <div class="srch"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" placeholder="Search everything" aria-label="Search everything" autocomplete="off"><kbd>/</kbd></div>
     <button class="vbtn" data-act="vxopen" aria-label="Open the voice narrator"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg><span>Voice narrator</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
     <ul class="nav views" id="nav"></ul>
@@ -935,6 +1014,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     <div class="qa-foot"><span class="mono muted">Enter adds and stays open · Esc closes</span><button class="btn amber" type="submit" id="qa-go">Add</button></div>
   </form>
 </div>
+<div id="greet" class="greet" role="dialog" aria-live="polite" aria-labelledby="greet-h" hidden></div>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="htip" class="htip" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -967,7 +1047,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   var VIEWS=[['home','Overview','home'],['needs','Needs you','needs'],['projects','Projects','projects'],['board','Board','board'],['activity','Activity','activity'],['budgets','Budgets','budgets'],['milestones','Milestones','milestones'],['log','Log','log'],['ideas','Ideas and notes','ideas']];
 
   var state={booting:true,hash:'',projects:[],items:[],log:[],budgets:[],settings:null,db:null,canWrite:true,loadedAll:false,err:null,slow:false,pending:false,
-    open:null,confirm:null,q:'',tab:{},showDone:{},editSum:false,newProj:false,editGoal:false,editBudget:null,
+    open:null,confirm:null,q:'',tab:{},showDone:{},editSum:false,newProj:false,editGoal:false,editBudget:null,addSpend:null,
     pf:'all',ps:'order',lf:'all',lk:'all',ik:'all',ip:'all',qk:'todo',qaProj:'',qaCount:0,qaRecent:[],counter:'glow'};
   try{var t=JSON.parse(localStorage.getItem('hub3')||'{}');['tab','counter','pf','ps'].forEach(function(k){if(t[k]!=null)state[k]=t[k]})}catch(e){}
   function remember(){try{localStorage.setItem('hub3',JSON.stringify({tab:state.tab,counter:state.counter,pf:state.pf,ps:state.ps}))}catch(e){}}
@@ -1240,7 +1320,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function clockTxt(){return new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function viewHome(){
     var ps=sortedProjects();
-    if(!ps.length)return '<div class="head"><h1>Build Hub</h1></div>'+(loading()?loadingView():empty('No projects yet','Add one with "+ New" in the sidebar, or tell Claude what you are working on and it will set it up here.'));
+    if(!ps.length)return '<div class="head"><h1>Command Centre</h1></div>'+(loading()?loadingView():empty('No projects yet','Add one with "+ New" in the sidebar, or tell Claude what you are working on and it will set it up here.'));
     var S=stats(),hr=new Date().getHours(),hi=hr<12?'Morning':hr<18?'Afternoon':'Evening',gl=goal();
     var need=state.items.filter(function(x){return x.kind==='todo'&&!x.done&&x.waiting}).sort(function(a,b){return (a.due||'9')<(b.due||'9')?-1:(a.due||'9')>(b.due||'9')?1:byOrder(a,b)});
     var needP={};need.forEach(function(x){needP[x.project]=1});var nNP=Object.keys(needP).length;
@@ -1249,7 +1329,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     var stars='';for(var i=0;i<RANKS.length;i++)stars+='<svg viewBox="0 0 24 24" class="'+(i<=S.ri?'on':'')+'" aria-hidden="true">'+I.star+'</svg>';
     var h='<div class="stage"><div class="hud">';
     // header
-    h+='<header class="hp hud-top rise"><div class="ht-l"><div class="stars" role="img" aria-label="Rank '+(S.ri+1)+' of '+RANKS.length+'">'+stars+'</div><div style="min-width:0"><h1 class="ht-title">Build Hub <span>// Command centre</span></h1>'+
+    h+='<header class="hp hud-top rise"><div class="ht-l"><div class="stars" role="img" aria-label="Rank '+(S.ri+1)+' of '+RANKS.length+'">'+stars+'</div><div style="min-width:0"><h1 class="ht-title">Command <span>Centre</span></h1>'+
       '<div class="ht-sub">'+hi+', Jenson · <b>'+S.need+' waiting on you</b> · '+ps.length+' projects · '+S.doneWk+' done this week</div></div></div>'+
       '<a class="ht-m" href="#milestones" style="text-decoration:none"><div class="row"><span>Rank</span><b>'+esc(S.rank)+'</b></div>'+segbar(S.xp,20)+'<div class="row"><span>'+(S.next?(S.next[0]-S.done)+' to '+esc(S.next[1]):'Top rank')+'</span><span>XP '+S.xp+'%</span></div></a>'+
       '<div class="ht-r"><button class="ht-voice" data-act="vxsay" data-v="brief">'+ico('wave')+'Brief me</button><div class="ht-date"><b>'+new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+'</b>'+live+'</div><div class="clock" id="hud-clock" aria-label="Time">'+clockTxt()+'</div></div></header>';
@@ -1289,7 +1369,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
       '<div class="dig-sub"><span>across <b>'+nNP+'</b> project'+(nNP===1?'':'s')+'</span><span>'+(S.overdue?'<b>'+S.overdue+' overdue</b>':'none overdue')+'</span></div></a>';
     // budgets
     h+=hp('budg-p','Budgets <em>// spend</em>',hlink('#budgets'),bs.length?bs.map(function(b){var r=b.total?b.used/b.total:0,col=r>=.9?'var(--bad)':r>=.7?'var(--warn)':'var(--ok)';
-      return '<a class="bg" href="#budgets"'+tip(b.label+'\n'+money(b,b.used)+' of '+money(b,b.total)+(b.note?'\n'+b.note:''))+'><span class="bl">'+esc(b.label)+'</span>'+segbar(r*100,24,col)+'<span class="bv"><b>'+money(b,b.used)+'</b><span>'+Math.round(r*100)+'% of '+money(b,b.total)+'</span></span></a>'}).join(''):'<div class="empty-h">No budgets yet.</div>',11);
+      return '<a class="bg" href="#budgets"'+tip(b.label+'\n'+money(b,b.used)+' of '+money(b,b.total)+'\n'+bchk(b).t+(b.note?'\n'+b.note:''))+'><span class="bl">'+esc(b.label)+'</span>'+segbar(r*100,24,col)+'<span class="bv"><b>'+money(b,b.used)+'</b><span>'+Math.round(r*100)+'% of '+money(b,b.total)+(bchk(b).old?' · <span style="color:var(--warn)">check</span>':'')+'</span></span></a>'}).join(''):'<div class="empty-h">No budgets yet.</div>',11);
     h+='</div></div>';
     setTimeout(function(){unlockCheck(S)},0);
     return h;
@@ -1350,9 +1430,11 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     el.textContent=t.getAttribute('data-tip');el.hidden=false;var r=el.getBoundingClientRect(),x=e.clientX+14,y=e.clientY+16;
     if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;el.style.left=Math.max(8,x)+'px';el.style.top=Math.max(8,y)+'px'});
   window.addEventListener('scroll',function(){var el=$('#htip');if(el)el.hidden=true},{passive:true});
+  function bchk(b){if(!b.checked)return {t:'Not checked yet',old:true};var age=(Date.now()-new Date(b.checked).getTime())/864e5;return {t:'Checked '+rel(b.checked),old:age>(b.staleDays||2)}}
+  function chkTag(b){var c=bchk(b);return '<span class="chk'+(c.old?' old':'')+'">'+esc(c.t)+(c.old?' · may be out of date':'')+'</span>'}
   function budgetRow(b){
     var r=b.total?b.used/b.total:0,p=proj(b.project),col=r>=.9?'var(--bad)':r>=.7?'var(--warn)':'var(--ok)';
-    return '<div class="brow"><div style="min-width:0"><b>'+esc(b.label)+'</b></div><div class="mono">'+esc(money(b,b.used))+' / '+esc(money(b,b.total))+'</div>'+bar(r*100,col,'thin')+'</div>';
+    return '<div class="brow"><div style="min-width:0"><b>'+esc(b.label)+'</b></div><div class="mono">'+esc(money(b,b.used))+' / '+esc(money(b,b.total))+'</div>'+bar(r*100,col,'thin')+chkTag(b)+'</div>';
   }
   function viewNeeds(){
     var need=state.items.filter(function(x){return x.kind==='todo'&&!x.done&&x.waiting}),h='<header class="head rise"><span class="label">Across every project</span><h1>Needs you</h1><p class="lede">Decisions, approvals and things only you can supply. Tick them off or clear the flag once they are handled.</p></header>';
@@ -1398,13 +1480,15 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     return h;
   }
   function viewBudgets(){
-    var bs=state.budgets.slice().sort(byOrder),h='<header class="head rise"><span class="label">Credits, spend and usage limits</span><h1>Budgets</h1><p class="lede">Update a figure whenever it changes. Each update is written to the log.</p></header>';
+    var bs=state.budgets.slice().sort(byOrder),h='<header class="head rise"><span class="label">Credits, spend and usage limits</span><h1>Budgets</h1><p class="lede">Tap + Spend when you pay for something, or Still right after you check a figure. Each budget shows when it was last checked, and turns amber when it may be out of date.</p></header>';
     if(!bs.length)return h+empty('No budgets tracked yet','Tell Claude what to watch: fal.ai spend, Higgsfield credits, a marketing budget, a usage limit.');
     h+='<div class="bcards">'+bs.map(function(b,i){var r=b.total?b.used/b.total:0,col=r>=.9?'var(--bad)':r>=.7?'var(--warn)':'var(--ok)',p=proj(b.project),id=esc(b.id);
       return '<article class="bud rise" style="--i:'+i+'"><div class="bud-top">'+ring(r,col,92,'<b>'+Math.round(r*100)+'%</b>')+'<div style="min-width:0;display:flex;flex-direction:column;gap:6px"><h3>'+esc(b.label)+'</h3>'+pchip(p)+'</div></div>'+
         '<div class="kv"><div><div class="amt">'+esc(money(b,b.used))+'</div><span class="label">used of '+esc(money(b,b.total))+'</span></div><div style="text-align:right"><div class="amt" style="color:'+col+'">'+esc(money(b,Math.max(0,b.total-b.used)))+'</div><span class="label">left</span></div></div>'+
-        (b.note?'<p class="note">'+esc(b.note)+'</p>':'')+
-        (state.editBudget===b.id?'<form class="add" data-form="budget" data-id="'+id+'"><input type="text" inputmode="decimal" id="b-used" value="'+esc(b.used)+'" aria-label="Used so far"><button class="btn sm" type="submit">Save</button><button class="btn ghost sm" type="button" data-act="editbudget" data-id="'+id+'">Cancel</button></form>':'<button class="btn ghost sm" style="align-self:flex-start" data-act="editbudget" data-id="'+id+'">Update figure</button>')+'</article>'}).join('')+'</div>';
+        (b.note?'<p class="note">'+esc(b.note)+'</p>':'')+chkTag(b)+
+        (state.editBudget===b.id?'<form class="bedit" data-form="budget" data-id="'+id+'"><label>Used<input type="text" inputmode="decimal" id="b-used" value="'+esc(b.used)+'"></label><label>Total<input type="text" inputmode="decimal" id="b-total" value="'+esc(b.total)+'"></label><div class="acts"><button class="btn sm" type="submit">Save</button><button class="btn ghost sm" type="button" data-act="editbudget" data-id="'+id+'">Cancel</button></div></form>':
+         state.addSpend===b.id?'<form class="bedit" data-form="spend" data-id="'+id+'"><label>Amount spent<input type="text" inputmode="decimal" id="b-spend" placeholder="0"></label><label>On what (optional)<input type="text" id="b-what" placeholder="e.g. 3 video clips"></label><div class="acts"><button class="btn sm" type="submit">Add spend</button><button class="btn ghost sm" type="button" data-act="addspend" data-id="'+id+'">Cancel</button></div></form>':
+         '<div class="acts"><button class="btn sm" data-act="addspend" data-id="'+id+'">+ Spend</button><button class="btn ghost sm" data-act="editbudget" data-id="'+id+'">Update figures</button><button class="btn ghost sm" data-act="budgetok" data-id="'+id+'">Still right</button></div>')+'</article>'}).join('')+'</div>';
     return h;
   }
   function viewMilestones(){
@@ -1535,12 +1619,12 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     $('#fab').disabled=!state.db||!state.canWrite;renderMob();
   }
   function renderNotice(){
-    var n='';
+    var n='',mv=window.BH_WEB?'':'<div class="moved"><span><b>Build Hub has moved.</b> This copy is no longer updated. Use the website, which has all your data.</span><a class="btn sm" href="https://1jenson.github.io/build-hub/" target="_blank" rel="noopener">Open Build Hub</a></div>';
     if(!state.db)n='<div class="banner warn">Live data is not connected in this view. Open the hub on claude.ai while signed in to see and edit your projects.</div>';
     else if(state.err==='revoked')n='<div class="banner warn">Your access to this hub changed. Reload to see what you can still open.</div>';
     else if(!state.canWrite)n='<div class="banner">You can read this hub but not change it.</div>';
     else if(state.slow)n='<div class="banner warn">Still waiting for the live data. What you see may be out of date.</div>';
-    $('#notice').innerHTML=n;
+    $('#notice').innerHTML=mv+n;
   }
   function render(force){
     var a=document.activeElement;
@@ -1551,7 +1635,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     else if(r.v==='project')h=viewProject(r.id);
     else h=({home:viewHome,needs:viewNeeds,projects:viewProjects,board:viewBoard,activity:viewActivity,budgets:viewBudgets,milestones:viewMilestones,log:viewLog,ideas:viewIdeas})[r.v]();
     var y=window.scrollY;v.dataset.counter=state.counter;v.innerHTML=h;animateNums();window.scrollTo(0,y);if(document.getElementById('globe'))mountGlobe();else cancelAnimationFrame(globe.raf);
-    var p=r.v==='project'&&proj(r.id);document.title=state.q?'Search · Build Hub':p?p.name+' · Build Hub':'Build Hub';
+    var p=r.v==='project'&&proj(r.id);document.title=state.q?'Search · Command Centre':p?p.name+' · Command Centre':'Command Centre';
   }
   var raf=0,rto=0;function schedule(){cancelAnimationFrame(raf);clearTimeout(rto);var f=function(){cancelAnimationFrame(raf);clearTimeout(rto);render(false)};raf=requestAnimationFrame(f);rto=setTimeout(f,120)}
   function intro(){var v=$('#view');v.classList.remove('intro');void v.offsetWidth;v.classList.add('intro');clearTimeout(intro.t);intro.t=setTimeout(function(){v.classList.remove('intro')},1800)}
@@ -1608,8 +1692,11 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
         .then(function(){render(true);var n=document.getElementById('ia-'+k);if(n)n.focus();toast('Added.')},function(){inp.value=text})}
     else if(t==='log'){var lt=$('#lg-text').value.trim(),lp=$('#lg-proj').value;if(!lt)return;run(function(){return addLog(lp,lt,'progress')}).then(function(){$('#lg-text').value='';render(true);toast('Logged.')},function(){})}
     else if(t==='goal'){var gn=parseInt($('#g-in').value,10);if(!(gn>0&&gn<1000)){toast('Enter a number above zero.');return}run(function(){return state.db.doc('settings/hub').set({weeklyGoal:gn})}).then(function(){state.editGoal=false;render(true)},function(){})}
-    else if(t==='budget'){var bu=state.budgets.filter(function(x){return x.id===id})[0],nv=parseFloat($('#b-used').value);if(!bu||isNaN(nv)){toast('Enter a number.');return}
-      run(function(){return state.db.doc('budgets/'+id).update({used:nv}).then(function(){return addLog(bu.project||'motorvoco',bu.label+' now '+money(bu,nv)+' of '+money(bu,bu.total),'note')})}).then(function(){state.editBudget=null;render(true);toast('Updated and logged.')},function(){})}
+    else if(t==='budget'){var bu=state.budgets.filter(function(x){return x.id===id})[0],nv=parseFloat($('#b-used').value),nt=parseFloat($('#b-total').value);if(!bu||isNaN(nv)||isNaN(nt)||nt<=0){toast('Enter numbers for used and total.');return}
+      run(function(){return state.db.doc('budgets/'+id).update({used:nv,total:nt,checked:new Date().toISOString()}).then(function(){return addLog(bu.project||'motorvoco',bu.label+' now '+money(bu,nv)+' of '+money(bu,nt),'note')})}).then(function(){state.editBudget=null;render(true);toast('Updated and logged.')},function(){})}
+    else if(t==='spend'){var bs2=state.budgets.filter(function(x){return x.id===id})[0],amt=parseFloat($('#b-spend').value),what=$('#b-what').value.trim();if(!bs2||isNaN(amt)||amt<=0){toast('Enter the amount spent.');return}
+      var nu=Math.round(((+bs2.used||0)+amt)*100)/100;
+      run(function(){return state.db.doc('budgets/'+id).update({used:nu,checked:new Date().toISOString()}).then(function(){return addLog(bs2.project||'motorvoco','Spent '+money(bs2,amt)+(what?' on '+what:'')+' · '+bs2.label+' now '+money(bs2,nu)+' of '+money(bs2,bs2.total),'note')})}).then(function(){state.addSpend=null;render(true);toast('Spend added and logged.')},function(){})}
     else if(t==='sum'&&p){var nm=$('#s-name').value.trim(),sv=$('#s-text').value.trim();if(!nm){toast('Give the project a name.');return}run(function(){return state.db.doc('projects/'+id).update({name:nm,summary:sv,updated:new Date().toISOString()})}).then(function(){state.editSum=false;render(true)},function(){})}
     else if(t==='link'&&p){var lb=$('#l-label').value.trim(),lv=$('#l-val').value.trim();if(!lb||!lv){toast('Add a label and a link or path.');return}
       run(function(){return state.db.doc('projects/'+id).update({links:(p.links||[]).concat([{label:lb,value:lv}])})}).then(function(){render(true)},function(){})}
@@ -1641,7 +1728,9 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     else if(act==='lk'){state.lk=b.dataset.v;render(true)}
     else if(act==='ik'){state.ik=b.dataset.v;render(true)}
     else if(act==='editgoal'){state.editGoal=!state.editGoal;render(true)}
-    else if(act==='editbudget'){state.editBudget=state.editBudget===id?null:id;render(true);if(state.editBudget)setTimeout(function(){var n=$('#b-used');if(n){n.focus();n.select()}},0)}
+    else if(act==='editbudget'){state.editBudget=state.editBudget===id?null:id;state.addSpend=null;render(true);if(state.editBudget)setTimeout(function(){var n=$('#b-used');if(n){n.focus();n.select()}},0)}
+    else if(act==='addspend'){state.addSpend=state.addSpend===id?null:id;state.editBudget=null;render(true);if(state.addSpend)setTimeout(function(){var n=$('#b-spend');if(n)n.focus()},0)}
+    else if(act==='budgetok'){run(function(){return state.db.doc('budgets/'+id).update({checked:new Date().toISOString()})}).then(function(){render(true);toast('Marked as checked.')},function(){})}
     else if(act==='newproj'){state.newProj=!state.newProj;render(true);if(state.newProj)setTimeout(function(){var n=$('#np-name');if(n)n.focus()},0)}
     else if(act==='qaopen')qaOpen(b.dataset.k);
     else if(act==='qaclose')qaClose();
@@ -1674,6 +1763,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     h+='<div class="mrow"><span class="label">Projects</span>'+(state.db&&state.canWrite?'<button type="button" class="btn ghost sm" data-act="mnewproj">+ New project</button>':'')+'</div>';
     h+='<ul class="mlist">'+sortedProjects().map(function(p){var o=todosOf(p.id).filter(function(i){return !i.done}).length;
       return '<li><a href="#p-'+esc(p.id)+'" style="'+pvar(p)+'"'+(r.v==='project'&&r.id===p.id?' aria-current="page"':'')+'><i class="pdot"></i><span class="nm">'+esc(p.name)+'</span><span class="ct">'+esc(ST[p.status]||'Active')+' · '+o+' open</span></a></li>'}).join('')+'</ul>';
+    if(window.BH_extras)h+=window.BH_extras();
     h+='<p class="vx-note">'+esc($('#sync').textContent)+'</p>';
     $('#more-in').innerHTML=h;
   }
@@ -1681,6 +1771,20 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   /* ---------- v7: voice narrator ---------- */
   var VX={live:false,nudge:false,auto:true,voice:'',rate:1};
   try{var vt=JSON.parse(localStorage.getItem('hub3.voice')||'{}');Object.keys(VX).forEach(function(k){if(vt[k]!=null)VX[k]=vt[k]})}catch(e){}
+  function greetPart(){var h=new Date().getHours();return h<12?'Morning':h<18?'Afternoon':'Evening'}
+  function greetKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+':'+greetPart()}
+  function greetClose(){var g=$('#greet');if(g.hidden)return;g.classList.add('out');setTimeout(function(){g.hidden=true;g.classList.remove('out')},260)}
+  window.BH_greet=function(){
+    if(!state.loadedAll||document.hidden)return;var k=greetKey(),seen='';try{seen=localStorage.getItem('hub3.greet')||''}catch(e){}
+    if(seen===k)return;try{localStorage.setItem('hub3.greet',k)}catch(e){}
+    var open=state.items.filter(function(x){return x.kind==='todo'&&!x.done}),need=open.filter(function(x){return x.waiting}).length,
+      td=new Date(),tk=td.getFullYear()+'-'+String(td.getMonth()+1).padStart(2,'0')+'-'+String(td.getDate()).padStart(2,'0'),due=open.filter(function(x){return x.due&&x.due<=tk}).length,
+      bits=[need?need+' waiting on you':'Nothing waiting on you',due?due+' due today':''].filter(Boolean).join(' · ');
+    var g=$('#greet');g.innerHTML='<div class="g-k">Incoming · '+td.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</div>'+
+      '<h2 id="greet-h">'+greetPart()+', Jenson.</h2><p>Would you like a briefing? '+esc(bits)+'.</p>'+
+      '<div class="g-a"><button class="btn" type="button" data-act="greetyes">Yes, brief me</button><button class="btn ghost" type="button" data-act="greetno">No thanks</button></div>';
+    g.hidden=false;clearTimeout(window.BH_greet.t);window.BH_greet.t=setTimeout(greetClose,45000)};
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(window.BH_greet,500)});
   function vxSave(){try{localStorage.setItem('hub3.voice',JSON.stringify(VX))}catch(e){}}
   var syn=('speechSynthesis' in window)?window.speechSynthesis:null,voices=[],speaking=false,vxQ=0,lastNudge=Date.now();
   function loadVoices(){
@@ -1893,6 +1997,8 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     else if(a==='vxopen')vxOpen();
     else if(a==='vxclose')vxClose();
     else if(a==='vxstop'){hush();if(smCtl){var c=smCtl;smCtl=null;c.abort();busy(false);$('#vx-out').hidden=true}}
+    else if(a==='greetyes'){greetClose();say(brief())}
+    else if(a==='greetno'){greetClose()}
     else if(a==='vxsay'){var v=b.dataset.v;
       if(v==='next')vxNext();
       else say(v==='needs'?needsText():v==='remind'?remindText():v==='updates'?updatesText():v==='page'?pageText():brief())}
@@ -1928,7 +2034,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     function sub(name){
       state.db.collection(name).onSnapshot(function(s){
         state[name]=s.docs.map(function(d){var o=JSON.parse(JSON.stringify(d.data()||{}));o.id=d.id;return o});vxWatch(name);
-        if(!s.metadata||!s.metadata.fromCache){fresh[name]=true;if(fresh.projects&&fresh.items&&fresh.log){clearTimeout(timer);state.slow=false;if(!state.loadedAll){state.loadedAll=true;intro()}}}
+        if(!s.metadata||!s.metadata.fromCache){fresh[name]=true;if(fresh.projects&&fresh.items&&fresh.log){clearTimeout(timer);state.slow=false;if(!state.loadedAll){state.loadedAll=true;intro();if(window.BH_greet)setTimeout(window.BH_greet,700)}}}
         schedule();
       },function(err){state.err=err&&err.code;clearTimeout(timer);schedule()});
     }
