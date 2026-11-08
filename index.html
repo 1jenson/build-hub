@@ -1052,6 +1052,8 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
       <button type="button" class="tg" data-act="vxtg" data-v="auto" aria-pressed="true"><span>Read answers aloud<small>Speak replies from Talk it through</small></span></button>
     </div>
     <div class="vx-set"><label><span class="label">Voice</span><select class="field" id="vx-voice" aria-label="Voice"></select></label><label><span class="label">Speed <b id="vx-rv">1.0×</b></span><input type="range" id="vx-rate" min="0.7" max="1.5" step="0.05" value="1"></label></div>
+    <div class="vx-set"><label><span class="label">Pitch <b id="vx-pv">1.0</b></span><input type="range" id="vx-pitch" min="0.6" max="1.2" step="0.05" value="1"></label><button type="button" class="btn ghost" data-act="vxtest" id="vx-test">Test voice</button></div>
+    <p class="vx-note" id="vx-vnote"></p>
     <div class="vx-talk" id="vx-talk">
       <h3>Talk it through</h3>
       <p>Ask about your projects, plan your day or brainstorm. Tap your keyboard's mic to dictate.</p>
@@ -1865,7 +1867,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   }
 
   /* ---------- v7: voice narrator ---------- */
-  var VX={live:false,nudge:false,auto:true,voice:'',rate:1};
+  var VX={live:false,nudge:false,auto:true,voice:'',rate:1,pitch:null};
   try{var vt=JSON.parse(localStorage.getItem('hub3.voice')||'{}');Object.keys(VX).forEach(function(k){if(vt[k]!=null)VX[k]=vt[k]})}catch(e){}
   function greetPart(){var h=new Date().getHours();return h<12?'Morning':h<18?'Afternoon':'Evening'}
   function greetKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+':'+greetPart()}
@@ -1883,19 +1885,52 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(window.BH_greet,500)});
   function vxSave(){try{localStorage.setItem('hub3.voice',JSON.stringify(VX))}catch(e){}}
   var syn=('speechSynthesis' in window)?window.speechSynthesis:null,voices=[],speaking=false,vxQ=0,lastNudge=Date.now();
+  var vTries=0;
+  function vlabel(v){var n=v.name;if(!/enhanced|premium|siri|natural/i.test(n))n=n.replace(/\s*\(.*\)$/,'');return n}
+  /* Jarvis preset: best British male voice on this device (Enhanced/Premium/Siri first) */
+  function jScore(v){
+    var n=v.name,sc=0;
+    if(/en[-_]GB/i.test(v.lang))sc+=50;else if(/^en[-_](AU|IE|ZA|NZ)/i.test(v.lang))sc+=8;else sc+=2;
+    if(/\b(Daniel|Oliver|Arthur|George|Ryan|Malcolm|Gordon|Harry|James|Rishi)\b/i.test(n))sc+=40;
+    if(/google uk english male|\bmale\b/i.test(n)&&!/female/i.test(n))sc+=40;
+    if(/\b(Kate|Serena|Martha|Stephanie|Susan|Hazel|Libby|Sonia|Maisie|Amy|Emma|Fiona|Moira|Karen|Samantha|Tessa|Female)\b/i.test(n))sc-=60;
+    if(/\b(Eddy|Flo|Grandpa|Grandma|Reed|Rocko|Sandy|Shelley|Bubbles|Bells|Boing|Bad News|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Albert|Bahh|Cellos|Fred|Junior|Kathy|Ralph)\b/i.test(n))sc-=100;
+    if(/premium/i.test(n))sc+=30;else if(/enhanced/i.test(n))sc+=22;else if(/siri/i.test(n))sc+=26;
+    if(/natural|online/i.test(n))sc+=12;
+    if(v.localService)sc+=2;
+    return sc;
+  }
+  function jarvisVoice(){
+    var best=null,bs=-1e9;
+    voices.forEach(function(v){var sc=jScore(v);if(sc>bs){bs=sc;best=v}});
+    return best;
+  }
   function loadVoices(){
     if(!syn)return;
-    voices=syn.getVoices().filter(function(v){return /^en/i.test(v.lang)});
+    try{voices=syn.getVoices().filter(function(v){return /^en/i.test(v.lang)})}catch(e){voices=[]}
     voices.sort(function(a,b){var ga=/en[-_]GB/i.test(a.lang)?0:1,gb=/en[-_]GB/i.test(b.lang)?0:1;return ga-gb||a.name.localeCompare(b.name)});
+    /* iPhone Safari often returns [] at first and may never fire voiceschanged: retry briefly */
+    if(!voices.length&&vTries<12){vTries++;setTimeout(loadVoices,400)}
     var sel=$('#vx-voice');if(!sel)return;
-    sel.innerHTML=voices.length?voices.map(function(v){return '<option value="'+esc(v.name)+'">'+esc(v.name.replace(/\s*\(.*\)$/,''))+' · '+esc(v.lang)+'</option>'}).join(''):'<option value="">Default voice</option>';
-    var pv=pickVoice();if(pv)sel.value=pv.name;
+    var j=jarvisVoice();
+    sel.innerHTML='<option value="jarvis">Jarvis · British butler'+(j?' ('+esc(vlabel(j))+')':'')+'</option>'+voices.map(function(v){return '<option value="'+esc(v.name)+'">'+esc(vlabel(v))+' · '+esc(v.lang)+'</option>'}).join('');
+    var pv=pickVoice();sel.value=pv.jarvis?'jarvis':pv.v.name;
+    vNote();
   }
   if(syn){loadVoices();if(syn.addEventListener)syn.addEventListener('voiceschanged',loadVoices);else syn.onvoiceschanged=loadVoices}
+  /* returns {v:SpeechSynthesisVoice|null, jarvis:boolean}. A voice Jenson picked is kept; Jarvis is the default */
   function pickVoice(){
-    var v=null;voices.forEach(function(x){if(x.name===VX.voice)v=x});
-    if(!v)voices.forEach(function(x){if(!v&&/en[-_]GB/i.test(x.lang)&&/Daniel|Serena|Kate|Arthur|Martha|Google UK/i.test(x.name))v=x});
-    return v||voices[0]||null;
+    var v=null;
+    if(VX.voice&&VX.voice!=='jarvis')voices.forEach(function(x){if(x.name===VX.voice)v=x});
+    if(v)return {v:v,jarvis:false};
+    return {v:jarvisVoice(),jarvis:true};
+  }
+  function vPitch(pv){return VX.pitch!=null&&VX.pitch!==''?+VX.pitch:(pv.jarvis?0.85:1)}
+  function vNote(){
+    var el=$('#vx-vnote');if(!el)return;
+    if(!syn){el.textContent='';return}
+    var pv=pickVoice();
+    el.textContent=pv.jarvis?(pv.v?'Jarvis is using '+vlabel(pv.v)+' ('+pv.v.lang+'), pitch lower and a touch slower. For a richer sound, download Daniel or Oliver (Enhanced) in System Settings, Accessibility, Spoken Content.':'No voices found yet, so the device default will be used.'):'';
   }
   function clean(t){return String(t||'').replace(/https?:\/\/\S+/g,'a link').replace(/[*_#`>|]+/g,'').replace(/\s+[–—-]\s+/g,', ').replace(/\s+/g,' ').trim()}
   function chunks(t){
@@ -1918,14 +1953,14 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     $('#vx-cap').textContent=text;
     if(!syn){toast('This browser cannot speak. The text is in the voice panel.');return}
     if(!opt.queue||!speaking){syn.cancel();vxQ++}
-    var my=vxQ,list=chunks(text),v=pickVoice();
+    var my=vxQ,list=chunks(text),pv=pickVoice(),v=pv.v,pitch=vPitch(pv),rate=(+VX.rate||1)*(pv.jarvis?0.95:1);
     list.forEach(function(c,i){
-      var u=new SpeechSynthesisUtterance(c);
+      var u;try{u=new SpeechSynthesisUtterance(c)}catch(e){return}
       if(v){u.voice=v;u.lang=v.lang}else u.lang='en-GB';
-      u.rate=+VX.rate||1;
+      u.rate=rate;u.pitch=pitch;
       u.onstart=function(){if(my===vxQ){setSpeaking(true,c);$('#vx-cap').textContent=text}};
       u.onend=u.onerror=function(){if(my===vxQ&&i===list.length-1)setTimeout(function(){if(my===vxQ&&!syn.speaking&&!syn.pending)setSpeaking(false)},60)};
-      syn.speak(u);
+      try{syn.speak(u)}catch(e){}
     });
     setSpeaking(true,list[0]);
   }
@@ -2089,7 +2124,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   if(window.claude&&window.claude.use)window.claude.use('sample').then(function(s){SM=s||null;talkUI()},function(){SM=null;talkUI()});
 
   /* panel */
-  function syncToggles(){[].forEach.call(document.querySelectorAll('#vx .tg'),function(b){b.setAttribute('aria-pressed',VX[b.dataset.v]?'true':'false')});$('#vx-rate').value=VX.rate;$('#vx-rv').textContent=(+VX.rate).toFixed(2).replace(/0$/,'')+'×'}
+  function syncToggles(){[].forEach.call(document.querySelectorAll('#vx .tg'),function(b){b.setAttribute('aria-pressed',VX[b.dataset.v]?'true':'false')});$('#vx-rate').value=VX.rate;$('#vx-rv').textContent=(+VX.rate).toFixed(2).replace(/0$/,'')+'×';var pp=vPitch(pickVoice());$('#vx-pitch').value=pp;$('#vx-pv').textContent=pp.toFixed(2).replace(/0$/,'');vNote()}
   function vxOpen(){$('#more').hidden=true;loadVoices();syncToggles();talkUI();setSpeaking(speaking);$('#vx').hidden=false;var x=$('#vx .x');if(x)x.focus({preventScroll:true})}
   function vxClose(){$('#vx').hidden=true}
   function vxNext(){
@@ -2119,6 +2154,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     else if(a==='vxtg'){var k=b.dataset.v;VX[k]=!VX[k];vxSave();syncToggles();
       if(k==='live'&&VX.live)say('Live narration on. I will read out new updates and finished tasks as they land.');
       if(k==='nudge'&&VX.nudge){lastNudge=Date.now();say('Hourly reminder on. I will check in once an hour while the hub is open.')}}
+    else if(a==='vxtest')say(testLine());
     else if(a==='vxask'){var q=b.dataset.q;$('#vx-in').value=q;ask(q)}
     else if(a==='vxread')say(lastAns);
     else if(a==='vxnew'){hist=[];lastAns='';$('#vx-out').hidden=true;$('#vx-oa').hidden=true;$('#vx-in').value='';$('#vx-in').focus()}
@@ -2136,7 +2172,10 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   });
   $('#vx-form').addEventListener('submit',function(e){e.preventDefault();if(smCtl){var c=smCtl;smCtl=null;c.abort();busy(false);return}ask($('#vx-in').value)});
   $('#vx-in').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#vx-form').requestSubmit?$('#vx-form').requestSubmit():ask($('#vx-in').value)}});
-  $('#vx-voice').addEventListener('change',function(e){VX.voice=e.target.value;vxSave();say('This is how I sound.')});
+  function testLine(){return 'Good '+greetPart().toLowerCase()+', Jenson. Command Centre online, and all systems are running.'}
+  $('#vx-voice').addEventListener('change',function(e){VX.voice=e.target.value;vxSave();syncToggles();say(testLine())});
+  $('#vx-pitch').addEventListener('input',function(e){VX.pitch=+e.target.value;$('#vx-pv').textContent=(+e.target.value).toFixed(2).replace(/0$/,'')});
+  $('#vx-pitch').addEventListener('change',function(){vxSave();say('This is my new pitch.')});
   $('#vx-rate').addEventListener('input',function(e){VX.rate=+e.target.value;syncToggles()});
   $('#vx-rate').addEventListener('change',function(){vxSave();say('This is my new speed.')});
   syncToggles();setSpeaking(false);
