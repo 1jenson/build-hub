@@ -282,7 +282,7 @@ a{color:inherit}
 /* ---------- shell ---------- */
 .app{display:grid;grid-template-columns:228px minmax(0,1fr);gap:34px;max-width:1400px;margin:0 auto}
 .side{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;height:100vh;padding-block:24px;display:flex;flex-direction:column;gap:22px;overflow:auto;scrollbar-width:none}
-.brand{display:flex;align-items:center;gap:10px;padding:0 4px;text-decoration:none;min-width:0}
+.brand{display:flex;align-items:center;gap:12px;padding:0 4px;text-decoration:none;min-width:0}
 .brand .mk{width:36px;height:36px;border-radius:10px;background:var(--amber);display:grid;place-items:center;color:var(--amber-ink);font:900 15px/1 var(--f-display);font-stretch:125%;box-shadow:0 0 0 4px color-mix(in srgb,var(--amber) 18%,transparent)}
 .brand b{font:800 18px/1.05 var(--f-display);font-stretch:110%;letter-spacing:-.01em;display:block}
 .brand small{font:500 10px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
@@ -622,7 +622,7 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
 .navhd button{font-size:12px}
 .srch input{font-size:15.5px}
 @media (min-width:901px){.side{margin-left:-10px}}
-.me{position:relative;width:42px;height:42px;border-radius:50%;flex:none;margin-left:auto;display:grid;place-items:center;background:var(--surface2);border:1.5px solid var(--red);box-shadow:0 0 12px var(--redg);font:700 17px/1 var(--f-display);color:var(--ink);overflow:hidden}
+.me{position:relative;width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--surface2);border:1.5px solid var(--red);box-shadow:0 0 12px var(--redg);font:700 17px/1 var(--f-display);color:var(--ink);overflow:hidden}
 .me img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 
 .nav a:hover{background:linear-gradient(90deg,var(--redd),transparent 80%)}
@@ -955,7 +955,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
 
 <div class="app">
   <aside class="side" aria-label="Navigation">
-    <a class="brand" href="#home"><span class="mk">BH</span><span style="min-width:0"><b>Command Centre</b><small>Jenson's workshop</small></span><span class="me" title="Jenson"><i aria-hidden="true" style="font-style:normal">J</i><img src="me.jpg?v=1" alt="Jenson" onerror="this.remove()"></span></a>
+    <a class="brand" href="#home"><span class="me" title="Jenson"><i aria-hidden="true" style="font-style:normal">J</i><img src="me.jpg?v=1" alt="Jenson" onerror="this.remove()"></span><span style="min-width:0"><b>Command Centre</b><small>Jenson's workshop</small></span></a>
     <div class="srch"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" placeholder="Search everything" aria-label="Search everything" autocomplete="off"><kbd>/</kbd></div>
     <button class="vbtn" data-act="vxopen" aria-label="Open the voice narrator"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg><span>Voice narrator</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
     <ul class="nav views" id="nav"></ul>
