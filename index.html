@@ -1931,7 +1931,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function vPitch(pv){return VX.pitch!=null&&VX.pitch!==''?+VX.pitch:(pv.jarvis?0.85:1)}
   function vNote(){
     var el=$('#vx-vnote');if(!el)return;
-    if(hdVoice()){el.textContent=HD.state==='loading'?'Downloading Jarvis HD'+(HD.pct?' '+HD.pct+'%':'')+' (one-off, a few hundred MB). It runs on this device and is cached after the first time. The system Jarvis voice speaks until then.':HD.state==='error'?'Jarvis HD could not load, so the system Jarvis voice is used instead.':HD.state==='ready'?'Jarvis HD is on (Kokoro, running on this device). Pitch does not apply.':'Jarvis HD loads the first time it speaks.';return}
+    if(hdVoice()){el.textContent=HD.state==='loading'?'Downloading Jarvis HD'+(HD.pct?' '+HD.pct+'%':'')+' (one-off, a few hundred MB). It runs on this device and is cached after the first time. The system Jarvis voice speaks until then.':HD.state==='error'?'Jarvis HD could not load, so the system Jarvis voice is used instead.':HD.state==='ready'?'Jarvis HD is on ('+(HD.dev==='gpu'?'fast mode: running on your graphics chip, so it should sound clean':'slow mode: this device has no graphics acceleration, so it runs on the CPU and may sound choppy')+'). Pitch does not apply.':'Jarvis HD loads the first time it speaks.';return}
     if(!syn){el.textContent='';return}
     var pv=pickVoice();
     el.textContent=pv.jarvis?(pv.v?'Jarvis is using '+vlabel(pv.v)+' ('+pv.v.lang+'), pitch lower and a touch slower. For a richer sound, download Daniel or Oliver (Enhanced) in System Settings, Accessibility, Spoken Content.':'No voices found yet, so the device default will be used.'):'';
