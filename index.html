@@ -1050,6 +1050,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
       <button type="button" class="tg" data-act="vxtg" data-v="live" aria-pressed="false"><span>Narrate live changes<small>Speak new updates and finished tasks as they land</small></span></button>
       <button type="button" class="tg" data-act="vxtg" data-v="nudge" aria-pressed="false"><span>Hourly reminder<small>A short nudge about what needs you, while the hub is open</small></span></button>
       <button type="button" class="tg" data-act="vxtg" data-v="auto" aria-pressed="true"><span>Read answers aloud<small>Speak replies from Talk it through</small></span></button>
+      <button type="button" class="tg" data-act="vxtg" data-v="sfx" aria-pressed="true"><span>Interface sounds<small>Little zaps and chirps when things change, open or finish</small></span></button>
       <button type="button" class="tg" data-act="vxtg" data-v="hdq" aria-pressed="false"><span>Sharper Jarvis HD<small>Full-quality model for Jarvis HD. Only matters on devices without graphics acceleration (they use the CPU instead). About 330 MB once</small></span></button>
     </div>
     <div class="vx-set"><label><span class="label">Voice</span><select class="field" id="vx-voice" aria-label="Voice"></select></label><label><span class="label">Speed <b id="vx-rv">1.0×</b></span><input type="range" id="vx-rate" min="0.7" max="1.5" step="0.05" value="1"></label></div>
@@ -1148,7 +1149,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function goal(){return (state.settings&&+state.settings.weeklyGoal)||10}
   function fmtN(v){return String(Number((+v||0).toFixed(2)))}
   function money(b,v){v=+v||0;return (b.pre||'')+(v%1&&/[$£€]/.test(b.pre||'')?v.toFixed(2):fmtN(v))+(b.suf||'')}
-  function toast(msg){var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(function(){t.hidden=true},3800)}
+  function toast(msg){sfx('chirp');var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(function(){t.hidden=true},3800)}
   function route(){var h=(state.hash||location.hash||'#home').slice(1);if(h.indexOf('p-')===0)return{v:'project',id:h.slice(2)};for(var i=0;i<VIEWS.length;i++)if(VIEWS[i][0]===h)return{v:h};return{v:'home'}}
   function run(fn){
     if(!state.db){toast('Live data is not connected yet.');return Promise.reject('nodb')}
@@ -1868,7 +1869,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   }
 
   /* ---------- v7: voice narrator ---------- */
-  var VX={live:false,nudge:false,auto:true,voice:'',rate:1,pitch:null,hdq:false};
+  var VX={live:false,nudge:false,auto:true,voice:'',rate:1,pitch:null,hdq:false,sfx:true};
   try{var vt=JSON.parse(localStorage.getItem('hub3.voice')||'{}');Object.keys(VX).forEach(function(k){if(vt[k]!=null)VX[k]=vt[k]})}catch(e){}
   function greetPart(){var h=new Date().getHours();return h<12?'Morning':h<18?'Afternoon':'Evening'}
   function greetKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+':'+greetPart()}
@@ -1887,6 +1888,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function vxSave(){try{localStorage.setItem('hub3.voice',JSON.stringify(VX))}catch(e){}}
   var syn=('speechSynthesis' in window)?window.speechSynthesis:null,voices=[],speaking=false,vxQ=0,lastNudge=Date.now();
   var HD={dev:'',state:'idle',tts:null,ctx:null,src:null,chain:Promise.resolve(),pct:0,files:{},gen:0,fx:null};
+  var LV={state:'idle'},LVURL='http://127.0.0.1:8787';
   var HDV={'bm_george':'George','bm_fable':'Fable','bm_lewis':'Lewis','bm_daniel':'Daniel'};
   var vTries=0;
   function vlabel(v){var n=v.name;if(!/enhanced|premium|siri|natural/i.test(n))n=n.replace(/\s*\(.*\)$/,'');return n}
@@ -1916,7 +1918,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     if(!voices.length&&vTries<12){vTries++;setTimeout(loadVoices,400)}
     var sel=$('#vx-voice');if(!sel)return;
     var j=jarvisVoice();
-    sel.innerHTML='<option value="jarvis">Jarvis · British butler'+(j?' ('+esc(vlabel(j))+')':'')+'</option>'+Object.keys(HDV).map(function(k){return '<option value="hd:'+k+'">Jarvis HD · '+HDV[k]+' (free, one-off download)</option>'}).join('')+voices.map(function(v){return '<option value="'+esc(v.name)+'">'+esc(vlabel(v))+' · '+esc(v.lang)+'</option>'}).join('');
+    sel.innerHTML='<option value="jarvis">Jarvis · British butler'+(j?' ('+esc(vlabel(j))+')':'')+'</option>'+Object.keys(HDV).map(function(k){return '<option value="hd:'+k+'">Jarvis HD · '+HDV[k]+' (free, one-off download)</option>'}).join('')+'<option value="local">Jarvis Local · cloned voice (runs on this Mac)</option>'+voices.map(function(v){return '<option value="'+esc(v.name)+'">'+esc(vlabel(v))+' · '+esc(v.lang)+'</option>'}).join('');
     var pv=pickVoice();sel.value=hdVoice()?'hd:'+hdVoice():(pv.jarvis?'jarvis':pv.v.name);
     vNote();
   }
@@ -1931,6 +1933,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function vPitch(pv){return VX.pitch!=null&&VX.pitch!==''?+VX.pitch:(pv.jarvis?0.85:1)}
   function vNote(){
     var el=$('#vx-vnote');if(!el)return;
+    if(isLocal()){el.textContent=LV.state==='ok'?'Jarvis Local is on: your cloned voice, running on this Mac. Pitch does not apply.':LV.state==='noref'?'The voice server is running but has no reference clip. Put a clean clip at voice-server/voices/jarvis.wav and try again.':LV.state==='down'?'The voice server is not running on this Mac, so the system Jarvis voice is used. See voice-server/README.md to start it.':'Checking for the voice server on this Mac…';return}
     if(hdVoice()){el.textContent=HD.state==='loading'?'Downloading Jarvis HD'+(HD.pct?' '+HD.pct+'%':'')+' (one-off, a few hundred MB). It runs on this device and is cached after the first time. The system Jarvis voice speaks until then.':HD.state==='error'?'Jarvis HD could not load, so the system Jarvis voice is used instead.':HD.state==='ready'?'Jarvis HD is on ('+(HD.dev==='gpu'?'fast mode: running on your graphics chip, so it should sound clean':'slow mode: this device has no graphics acceleration, so it runs on the CPU and may sound choppy')+'). Pitch does not apply.':'Jarvis HD loads the first time it speaks.';return}
     if(!syn){el.textContent='';return}
     var pv=pickVoice();
@@ -1947,12 +1950,33 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     return out;
   }
   function setSpeaking(on,text){
+    if(on&&!speaking)sfx('power');
     speaking=on;document.body.classList.toggle('speaking',on);
     $('#vxbar').hidden=!on;if(text!=null)$('#vxbar-t').textContent=text;
     $('#vx-stop').hidden=!on;
     if(!smCtl)$('#vx-st').textContent=on?'Speaking…':(syn?'Ready':'This browser cannot speak');
   }
   /* Jarvis HD: Kokoro runs in this browser (free, no key). Opt-in; one-off ~90 MB download, then cached */
+  /* Interface sounds: tiny synthesised zaps and chirps (Web Audio, no files, free) */
+  var sfxAt=0;
+  function sfx(kind){
+    try{
+      if(!VX.sfx)return;var c=hdCtx();if(!c||c.state!=='running')return;
+      var now=c.currentTime;if(now-sfxAt<0.045)return;sfxAt=now;
+      var m=c.createGain();m.gain.value=0.16;m.connect(c.destination);
+      function tone(type,f0,f1,t0,dur,vol,q){
+        var o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();
+        o.type=type;o.frequency.setValueAtTime(f0,now+t0);o.frequency.exponentialRampToValueAtTime(f1,now+t0+dur);
+        f.type='bandpass';f.Q.value=q||1.2;f.frequency.setValueAtTime(Math.max(f0,f1)*1.1,now+t0);f.frequency.exponentialRampToValueAtTime(Math.min(f0,f1)*0.9+60,now+t0+dur);
+        g.gain.setValueAtTime(0.0001,now+t0);g.gain.exponentialRampToValueAtTime(vol,now+t0+0.008);g.gain.exponentialRampToValueAtTime(0.0001,now+t0+dur);
+        o.connect(f);f.connect(g);g.connect(m);o.start(now+t0);o.stop(now+t0+dur+0.02)}
+      if(kind==='zap'){tone('sawtooth',2600,180,0,0.16,0.9,2);tone('square',1300,90,0.01,0.12,0.25,3)}
+      else if(kind==='chirp'){tone('sine',880,1320,0,0.07,0.8);tone('sine',1320,1760,0.075,0.09,0.7)}
+      else if(kind==='power'){tone('sawtooth',220,1400,0,0.3,0.55,2.5);tone('sine',440,2200,0.02,0.28,0.35)}
+      else{tone('sine',1500,1100,0,0.04,0.55,1)}
+    }catch(e){}
+  }
+  document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('button,a,[data-act],.tg,select,summary');if(t)sfx('blip')},true);
   function hdVoice(){var m=/^hd:(\w+)$/.exec(VX.voice||'');return m&&HDV[m[1]]?m[1]:''}
   function hdCtx(){try{if(!HD.ctx){var C=window.AudioContext||window.webkitAudioContext;if(C){var c=new C();HD.ctx=c;
       /* clean path: only cut sub-bass rumble and a hint of levelling; no EQ boosts (they made it harsh) */
@@ -1994,24 +2018,35 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
     try{a=hdPrep(a);var b=c.createBuffer(1,a.audio.length,a.sampling_rate||24000);b.copyToChannel(a.audio,0);
       var s=c.createBufferSource();s.buffer=b;s.connect(HD.fx||c.destination);HD.src=s;s.onended=function(){res()};s.start()}catch(e){res()}
   })}
-  function hdSpeak(list,my,text){
+  function isLocal(){return VX.voice==='local'}
+  /* Jarvis Local: a voice server on this Mac clones the reference clip. Free, nothing leaves the machine. */
+  function lvCheck(){LV.state='checking';vNote();
+    return fetch(LVURL+'/health').then(function(r){return r.json()}).then(function(j){LV.state=j&&j.ref?'ok':'noref'},function(){LV.state='down'}).then(function(){vNote();return LV.state})}
+  function lvGen(text){
+    return fetch(LVURL+'/tts?text='+encodeURIComponent(text)).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()})
+      .then(function(b){return new Promise(function(ok,no){var c=hdCtx();if(!c)return no();c.decodeAudioData(b,ok,no)})})
+      .then(function(buf){return {audio:buf.getChannelData(0),sampling_rate:buf.sampleRate}},function(){return null})}
+  function lvSpeak(list,my,text){hdSpeak(list,my,text,lvGen,2,function(){LV.state='down';vNote()},1)}
+  function hdSpeak(list,my,text,genFn,ahead,onFail,wait){
+    genFn=genFn||hdGen;
     HD.chain=HD.chain.then(function(){
-      var q=[],gp=Promise.resolve(),i=0,ahead=HD.dev==='gpu'?2:3;
-      /* one generation at a time, a few chunks ahead; on CPU wait for them first so playback never runs dry */
-      function enq(k){if(k<list.length&&!q[k])q[k]=gp=gp.then(function(){return my!==vxQ?null:hdGen(list[k])})}
+      var q=[],gp=Promise.resolve(),i=0;
+      ahead=ahead||(HD.dev==='gpu'?2:3);
+      /* one generation at a time, a few chunks ahead; wait for them first unless the device is fast */
+      function enq(k){if(k<list.length&&!q[k])q[k]=gp=gp.then(function(){return my!==vxQ?null:genFn(list[k])})}
       for(var k=0;k<ahead;k++)enq(k);
       function step(){
         if(my!==vxQ||i>=list.length)return;
         enq(i+ahead);
         return q[i].then(function(a){
           if(my!==vxQ)return;
-          if(!a){HD.state='error';vNote();sysSpeak(list.slice(i),my);return}
+          if(!a){if(onFail)onFail();else{HD.state='error';vNote()}sysSpeak(list.slice(i),my);return}
           setSpeaking(true,list[i]);i++;
           return hdPlay(a).then(step)});
       }
-      if(HD.dev==='gpu')return step();
+      if(genFn===hdGen&&HD.dev==='gpu')return step();
       setSpeaking(true,list[0]);
-      return Promise.all(q.slice(0,Math.min(ahead,list.length))).then(step);
+      return Promise.all(q.slice(0,Math.min(wait||ahead,list.length))).then(step);
     }).then(function(){if(my===vxQ&&!syn_busy())setSpeaking(false)},function(){if(my===vxQ)setSpeaking(false)});
   }
   function syn_busy(){return !!(syn&&(syn.speaking||syn.pending))}
@@ -2030,12 +2065,13 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function say(text,opt){
     opt=opt||{};text=clean(text);if(!text)return;
     $('#vx-cap').textContent=text;
-    var hd=!!hdVoice();
-    if(!syn&&!(hd&&HD.state==='ready')){toast('This browser cannot speak. The text is in the voice panel.');return}
+    var hd=!!hdVoice(),lo=isLocal();
+    if(!syn&&!lo&&!(hd&&HD.state==='ready')){toast('This browser cannot speak. The text is in the voice panel.');return}
     if(!opt.queue||!speaking){if(syn)syn.cancel();hdStop();vxQ++}
     var my=vxQ,list=chunks(text);
     if(hd&&HD.state!=='ready')hdLoad(); /* first use: system Jarvis speaks while HD loads */
-    if(hd&&HD.state==='ready'){hdSpeak(list,my,text)}
+    if(lo){hdUnlock();if(LV.state==='down'||LV.state==='noref')LV.state='idle';lvSpeak(list,my,text)}
+    else if(hd&&HD.state==='ready'){hdSpeak(list,my,text)}
     else sysSpeak(list,my,text);
     setSpeaking(true,list[0]);
   }
@@ -2129,7 +2165,9 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function vxWatch(name){
     if(name!=='log'&&name!=='items')return;
     var ids={},list=state[name];list.forEach(function(x){ids[x.id]=1});
-    var prev=vxSeen[name];vxSeen[name]=ids;if(!prev||!VX.live)return;
+    var prev=vxSeen[name];vxSeen[name]=ids;if(!prev)return;
+    for(var id in ids){if(!prev[id]){sfx('zap');break}}
+    if(!VX.live)return;
     var fresh=list.filter(function(x){var w=x.at||x.created;return !prev[x.id]&&w&&Date.now()-new Date(w).getTime()<3e5}).slice(-3);
     fresh.forEach(function(x){
       var t=name==='log'?(/^Done:/i.test(x.text||'')?cheer()+' Finished: '+x.text.replace(/^Done:\s*/i,'')+'.':'Update on '+pname(x.project)+': '+x.text):
@@ -2200,7 +2238,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
 
   /* panel */
   function syncToggles(){[].forEach.call(document.querySelectorAll('#vx .tg'),function(b){b.setAttribute('aria-pressed',VX[b.dataset.v]?'true':'false')});$('#vx-rate').value=VX.rate;$('#vx-rv').textContent=(+VX.rate).toFixed(2).replace(/0$/,'')+'×';var pp=vPitch(pickVoice());$('#vx-pitch').value=pp;$('#vx-pv').textContent=pp.toFixed(2).replace(/0$/,'');vNote()}
-  function vxOpen(){$('#more').hidden=true;loadVoices();syncToggles();talkUI();setSpeaking(speaking);$('#vx').hidden=false;var x=$('#vx .x');if(x)x.focus({preventScroll:true})}
+  function vxOpen(){$('#more').hidden=true;loadVoices();if(isLocal())lvCheck();syncToggles();talkUI();setSpeaking(speaking);$('#vx').hidden=false;var x=$('#vx .x');if(x)x.focus({preventScroll:true})}
   function vxClose(){$('#vx').hidden=true}
   function vxNext(){
     if(SM){vxOpen();ask('Talk me through the next task I should do.');return}
@@ -2251,6 +2289,7 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
   function testLine(){return 'Good '+greetPart().toLowerCase()+', Jenson. Command Centre online, and all systems are running.'}
   $('#vx-voice').addEventListener('change',function(e){VX.voice=e.target.value;vxSave();syncToggles();
     if(hdVoice()){hdUnlock();hdLoad().then(function(){if(hdVoice()&&HD.state==='ready')say(testLine())});vNote();return}
+    if(isLocal()){hdUnlock();lvCheck().then(function(st){if(isLocal()&&st==='ok')say(testLine())});return}
     say(testLine())});
   document.addEventListener('click',hdUnlock,true);
   $('#vx-pitch').addEventListener('input',function(e){VX.pitch=+e.target.value;$('#vx-pv').textContent=(+e.target.value).toFixed(2).replace(/0$/,'')});
