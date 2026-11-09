@@ -998,7 +998,7 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
   .ht-title span{display:block;margin-top:6px}
   .ht-sub{font-size:12px}
   .ht-m{max-width:none}
-  .ht-cards{justify-content:stretch}.ht-card{flex:1 1 140px;max-width:none}.ht-time{align-items:flex-start;text-align:left}.ht-cards .ht-act{flex:1 1 100%}.ht-act .ht-voice{justify-content:center}.globe-p .hp-h>.hp-t:last-child{display:none}
+  .ht-cards{justify-content:stretch}.ht-card{flex:1 1 140px;max-width:none}.ht-time{align-items:flex-start;text-align:left}.ht-cards .ht-act{flex:1 1 100%;width:auto}.globe-p .hp-h>.hp-t:last-child{display:none}
   .clock{font-size:24px}
   .kpis{grid-template-columns:minmax(0,1fr)}
 }
@@ -1036,9 +1036,10 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
 @keyframes eq{0%,100%{height:25%}50%{height:100%}}
 .ht-voice{display:inline-flex;white-space:nowrap;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--red) 55%,transparent);background:var(--redd);color:var(--ink);border-radius:8px;padding:9px 12px;font:600 11px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 18px -6px var(--redg)}
 .ht-voice .ico{width:16px;height:16px;color:var(--red)}
-.ht-act{display:flex;flex-direction:column;align-items:stretch;gap:8px}.ht-sqs{display:flex;gap:8px}
-.ht-sq{width:44px;height:44px;display:grid;place-items:center;padding:0;border-radius:8px;border:1px solid color-mix(in srgb,var(--red) 55%,transparent);background:var(--redd);color:var(--red);cursor:pointer;box-shadow:0 0 18px -6px var(--redg)}
-.ht-sq svg{width:26px;height:26px}
+.ht-act{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:120px}.ht-act .ht-voice{justify-content:center;padding:8px 10px;font-size:10px}
+.ht-sqs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ht-sqs>:only-child{grid-column:1/-1}
+.ht-sq{width:auto;height:56px;display:grid;place-items:center;padding:0;border-radius:8px;border:1px solid color-mix(in srgb,var(--red) 55%,transparent);background:var(--redd);color:var(--red);cursor:pointer;box-shadow:0 0 18px -6px var(--redg)}
+.ht-sq svg{width:30px;height:30px}
 .ht-sq:hover,.ht-sq:focus-visible{border-color:var(--red);color:#fff;outline:none}
 .ht-ns[aria-checked=true]{border-color:var(--red);background:rgba(255,42,61,.22);box-shadow:0 0 18px -2px var(--redg),inset 0 0 10px rgba(255,42,61,.3)}.ht-ns[aria-checked=true] svg{fill:currentColor;filter:drop-shadow(0 0 4px var(--redg))}
 .tabbar{display:none}
