@@ -36,9 +36,163 @@ img{max-width:100%}[hidden]{display:none!important}
 .bh-out{align-self:flex-start;font-size:12px;color:#767C8B}
 .bh-extra{display:flex;flex-wrap:wrap;gap:2px 18px;align-self:stretch}.bh-extra .bh-out{font-size:13px;color:#AAB0BD}.bh-extra .bh-out[hidden]{display:none}
 #more .bh-extra{padding:6px 4px 2px}#more .bh-extra .bh-out{font-size:15px}
+html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hidden!important}
+#bh-lock{position:fixed;inset:0;z-index:10001;visibility:visible;display:grid;place-items:center;overflow:auto;background:radial-gradient(70% 50% at 50% 0%,rgba(255,42,61,.18),transparent 70%),#06070A;color:#F1F2F5;padding:calc(24px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));font-family:"Instrument Sans",system-ui,sans-serif}
+#bh-lock .bl-box{width:100%;max-width:380px;display:grid;gap:14px;justify-items:stretch;text-align:center}
+#bh-lock img{justify-self:center;border-radius:20px;box-shadow:0 0 0 1px #232733,0 14px 50px rgba(255,42,61,.28)}
+#bh-lock svg{justify-self:center;filter:drop-shadow(0 0 14px rgba(255,42,61,.55))}
+#bh-lock .bg-tag{font:500 11px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.18em;text-transform:uppercase;color:#FF6170}
+#bh-lock h1{margin:0;font:700 34px/1 "Chakra Petch",system-ui,sans-serif;letter-spacing:.03em;text-transform:uppercase}
+#bh-lock .bl-t{margin:0;color:#AAB0BD;font-size:15px;line-height:1.45}
+#bh-lock .bl-go{min-height:52px;border:0;border-radius:12px;background:#FF2A3D;color:#fff;font:700 16px/1 "Chakra Petch",system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 10px 36px rgba(255,42,61,.32)}
+#bh-lock .bl-go:disabled{opacity:.55}
 </style>
 <script>window.BH_CFG={"url": "https://pueaklvxhmnghirehtxh.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1ZWFrbHZ4aG1uZ2hpcmVodHhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxMDQxNTgsImV4cCI6MjEwOTY4MDE1OH0.dTSPTxkqzMAwpvIV7YPSUB4ikRHDp39pbIon6lDu8g4"};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>/* Device lock (WebAuthn: Touch ID / Face ID). A front door on THIS device only. It does not replace Supabase sign-in or row-level security, which still protect the data. */
+(function () {
+  var K = 'bh.lock', root = document.documentElement, el, mode = '', prev = 'unlock', pend = [], hiddenAt = 0, lastAct = Date.now(), said = false;
+  var supported = !!(window.isSecureContext && window.PublicKeyCredential && navigator.credentials && navigator.credentials.create && navigator.credentials.get);
+  var IDLES = [[0, 'leaving the app'], [60, '1 min'], [120, '2 min'], [300, '5 min'], [900, '15 min']];
+  function rd() { try { return JSON.parse(localStorage.getItem(K)) || {}; } catch (e) { return {}; } }
+  function set(p) { try { localStorage.setItem(K, JSON.stringify(Object.assign(rd(), p))); } catch (e) {} }
+  function st() { var s = rd(); return { cred: s.cred || '', on: s.on !== false, idle: typeof s.idle === 'number' ? s.idle : 120, skip: !!s.skip }; }
+  function active() { var s = st(); return !!(s.cred && s.on); }
+  function say(t) { if (window.BH_toast) window.BH_toast(t); }
+  function rnd(n) { return crypto.getRandomValues(new Uint8Array(n)); }
+  function enc(b) { var u = new Uint8Array(b), s = ''; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function dec(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); }
+  function why(e) {
+    var n = e && e.name;
+    if (n === 'NotAllowedError' || n === 'AbortError') return 'Cancelled or timed out. Tap to try again.';
+    if (n === 'InvalidStateError') return 'A fingerprint is already registered here. Try again.';
+    if (n === 'NotSupportedError' || n === 'SecurityError') return 'This browser or device cannot use a fingerprint here.';
+    return (e && e.message) || 'Something went wrong. Try again.';
+  }
+  function verify(a, ch, type) {
+    var r = a && a.response; if (!r) throw new Error('No answer from the device.');
+    if (r.clientDataJSON) { var cd = JSON.parse(new TextDecoder().decode(r.clientDataJSON)); if (cd.type !== type || cd.challenge !== enc(ch) || cd.origin !== location.origin) throw new Error('The check did not match. Try again.'); }
+    if (r.authenticatorData && !(new Uint8Array(r.authenticatorData)[32] & 4)) throw new Error('Fingerprint was not confirmed.');
+    return a;
+  }
+  function authenticate() {
+    var s = st(), ch = rnd(32);
+    return navigator.credentials.get({ publicKey: { challenge: ch, timeout: 60000, userVerification: 'required', allowCredentials: [{ type: 'public-key', id: dec(s.cred), transports: ['internal'] }] } })
+      .then(function (a) { verify(a, ch, 'webauthn.get'); if (a.rawId && enc(a.rawId) !== s.cred) throw new Error('That is not the fingerprint saved on this device.'); return true; });
+  }
+  function register() {
+    var ch = rnd(32);
+    return navigator.credentials.create({ publicKey: { rp: { name: 'Build Hub' }, user: { id: rnd(16), name: 'jenson', displayName: 'Jenson' }, challenge: ch, timeout: 60000, attestation: 'none',
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: 'platform', residentKey: 'preferred', userVerification: 'required' } } })
+      .then(function (c) { if (!c || !c.rawId) throw new Error('No fingerprint was saved.'); verify(c, ch, 'webauthn.create'); return enc(c.rawId); });
+  }
+
+  function $(s) { return el.querySelector(s); }
+  function msg(t) { $('#bl-m').textContent = t || ''; }
+  function build() {
+    if (el) return;
+    el = document.createElement('div'); el.id = 'bh-lock'; el.hidden = true; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Build Hub locked');
+    el.innerHTML = '<div class="bl-box"><img src="icon-192.png" alt="" width="84" height="84"><div class="bg-tag">Command centre · Locked</div><h1>Build Hub</h1>' +
+      '<svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="#FF2A3D" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M14 28c0-10 8-17 18-17s18 7 18 17"/><path d="M20 30c0-7 5-12 12-12s12 5 12 12c0 8 1 13 4 18"/><path d="M26 32c0-4 2-7 6-7s6 3 6 7c0 7 1 13 4 19"/><path d="M32 33c0 8 1 14 3 20"/><path d="M20 36c0 6-1 11-4 16"/><path d="M14 38c0 4-1 8-2 11"/></svg>' +
+      '<p id="bl-t" class="bl-t"></p><button id="bl-go" class="bl-go" type="button"></button><p id="bl-m" class="bg-msg" role="status"></p>' +
+      '<div class="bg-alt"><button id="bl-alt" type="button"></button><button id="bl-skip" type="button" hidden></button></div></div>';
+    document.body.appendChild(el);
+    $('#bl-go').addEventListener('click', go);
+    $('#bl-alt').addEventListener('click', function () { if (mode === 'recover') show(prev); else { prev = mode; show('recover'); } });
+    $('#bl-skip').addEventListener('click', function () { set({ skip: true }); hide(); });
+  }
+  function show(m) {
+    if (!document.body) return document.addEventListener('DOMContentLoaded', function () { show(m); });
+    build(); mode = m; msg('');
+    var T = { unlock: ['Use your fingerprint (or face) to open your Command Centre.', 'Unlock with fingerprint'], setup: ['Protect the Command Centre on this device. Next time you will need your fingerprint to get in.', 'Set up fingerprint'],
+      recover: ['This signs you out and resets the lock on this device. Sign in again with your email and password, then set up the fingerprint again.', 'Sign out and reset'], unsupported: ['This browser cannot use a fingerprint, so it cannot unlock here. You can sign out and reset the lock instead.', ''] }[m];
+    $('#bl-t').textContent = T[0]; var g = $('#bl-go'); g.textContent = T[1]; g.hidden = !T[1]; g.disabled = false;
+    $('#bl-alt').textContent = m === 'recover' ? 'Back' : 'Can’t use fingerprint?';    $('#bl-skip').hidden = m !== 'setup'; $('#bl-skip').textContent = 'Not now';
+    el.hidden = false; root.classList.add('bh-locked'); window.BH_locked = true; document.dispatchEvent(new Event('bh:lock'));
+    if (m === 'setup' && window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(function (ok) {
+        if (ok || mode !== 'setup') return;
+        g.disabled = true; msg('This device has no fingerprint or face unlock set up, so the lock is unavailable. The hub still works without it.'); $('#bl-skip').textContent = 'Continue without lock';
+      }, function () {});
+    }
+    var f = g.hidden ? $('#bl-alt') : g; try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function hide() {
+    el.hidden = true; root.classList.remove('bh-locked'); window.BH_locked = false; lastAct = Date.now(); refresh();
+    var p = pend; pend = []; p.forEach(function (f) { try { f(); } catch (e) { console.error(e); } });
+    setTimeout(function () { if (window.BH_greet) window.BH_greet(); }, 600);
+  }
+  function go() {
+    var g = $('#bl-go'); g.disabled = true; msg('Waiting for your fingerprint…');
+    if (mode === 'recover') return reset();
+    (mode === 'setup' ? register().then(function (id) { set({ cred: id, on: true, skip: false }); say('Fingerprint lock is on.'); }) : authenticate())
+      .then(hide, function (e) { g.disabled = false; msg(why(e)); });
+  }
+  function reset() {
+    try { localStorage.removeItem(K); } catch (e) {}
+    msg('Signing out…'); if (window.BH_signOut) window.BH_signOut();
+    setTimeout(function () { try { localStorage.removeItem('bh.auth'); } catch (e) {} location.replace(location.pathname); }, 3000);
+  }
+
+  /* settings */
+  function idleLabel() { var i = st().idle, r = IDLES.filter(function (x) { return x[0] === i; })[0]; return r ? r[1] : Math.round(i / 60) + ' min'; }
+  function labels() {
+    var s = st();
+    return { lock: 'Fingerprint lock: ' + (!supported ? 'not available' : active() ? 'on' : 'off'), lockre: 'Re-register fingerprint', lockidle: 'Lock after: ' + idleLabel(), locknow: 'Lock now',
+      hidden: { lockre: !supported || !s.cred, lockidle: !active(), locknow: !active() } };
+  }
+  function refresh() {
+    var L = labels();
+    document.querySelectorAll('[data-bh^="lock"]').forEach(function (b) { var k = b.dataset.bh; b.textContent = L[k]; b.hidden = !!L.hidden[k]; if (k === 'lock') b.setAttribute('aria-pressed', String(active())); });
+  }
+  function html() {
+    var L = labels(); return ['lock', 'lockre', 'lockidle', 'locknow'].map(function (k) { return '<button type="button" class="bh-out" data-bh="' + k + '"' + (L.hidden[k] ? ' hidden' : '') + '>' + L[k] + '</button>'; }).join('');
+  }
+  function act(a) {
+    var s = st();
+    if (a === 'locknow') return lockNow();
+    if (a === 'lockidle') { var i = 0; IDLES.forEach(function (x, n) { if (x[0] === s.idle) i = n; }); set({ idle: IDLES[(i + 1) % IDLES.length][0] }); return refresh(); }
+    if (!supported) return say('This browser cannot use a fingerprint, so the lock is not available here.');
+    var fail = function (e) { say(why(e)); };
+    if (a === 'lock') {
+      if (!s.cred) return register().then(function (id) { set({ cred: id, on: true, skip: false }); refresh(); say('Fingerprint lock is on.'); }, fail);
+      if (!s.on) { set({ on: true }); refresh(); return say('Fingerprint lock is on.'); }
+      return authenticate().then(function () { set({ on: false }); refresh(); say('Fingerprint lock is off.'); }, fail);
+    }
+    if (a === 'lockre') {
+      var rr = function () { return register().then(function (id) { set({ cred: id, on: true, skip: false }); refresh(); say('Fingerprint registered on this device.'); }, fail); };
+      return s.cred && s.on ? authenticate().then(rr, fail) : rr();
+    }
+  }
+  function lockNow() { if (active() && !window.BH_locked) show('unlock'); }
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-bh^="lock"]'); if (b) act(b.dataset.bh); });
+
+  /* lock on load, after being hidden, and when idle */
+  window.BH_locked = active();
+  if (active()) { root.classList.add('bh-locked'); show(supported ? 'unlock' : 'unsupported'); }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+    if (hiddenAt && active() && !window.BH_locked && Date.now() - hiddenAt >= st().idle * 1000) show('unlock');
+    hiddenAt = 0; lastAct = Date.now();
+  });
+  ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach(function (t) { addEventListener(t, function () { if (!window.BH_locked) lastAct = Date.now(); }, { passive: true, capture: true }); });
+  setInterval(function () {
+    var i = st().idle; if (!active() || window.BH_locked || !i || document.hidden || (document.body && document.body.classList.contains('speaking'))) return;
+    if (Date.now() - lastAct >= i * 1000) show('unlock');
+  }, 10000);
+
+  window.BH_lock = {
+    html: html, refresh: refresh, lockNow: lockNow,
+    after: function (f) { if (window.BH_locked) pend.push(f); else f(); },
+    signedIn: function () {
+      var s = st(); if (window.BH_locked || s.cred || s.skip) return;
+      if (!supported) { if (!said) { said = true; setTimeout(function () { say('Fingerprint lock is not available in this browser. The hub works without it.'); }, 1500); } return; }
+      show('setup');
+    }
+  };
+})();
+</script>
 <script>/* Build Hub web runtime: replaces the claude.ai artifact runtime with Supabase. */
 (function () {
   var CFG = window.BH_CFG || {};
@@ -158,7 +312,7 @@ img{max-width:100%}[hidden]{display:none!important}
   function signedIn(s) {
     if (!s || !s.user) return;
     var first = !uid; uid = s.user.id; if (gate && mode !== 'new') gate.hidden = true;
-    if (first) { live(); resolveDb(db); }
+    if (first) { var open = function () { live(); resolveDb(db); }; if (window.BH_lock) { BH_lock.signedIn(); BH_lock.after(open); } else open(); }
   }
   window.BH_signOut = function () { if (sb) sb.auth.signOut().then(function () { location.replace(location.pathname); }); };
 
@@ -181,10 +335,11 @@ img{max-width:100%}[hidden]{display:none!important}
 
   /* ---------- backup + morning alerts ---------- */
   function toast(t) { var e = document.getElementById('toast'); if (!e) return; e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { e.hidden = true; }, 4200); }
+  window.BH_toast = toast;
   function extrasHtml() {
     return '<button type="button" class="bh-out" data-bh="backup">Back up data</button>' +
       '<button type="button" class="bh-out" data-bh="push">Morning alerts</button>' +
-      '<button type="button" class="bh-out" data-bh="pushtest" hidden>Send test alert</button>';
+      '<button type="button" class="bh-out" data-bh="pushtest" hidden>Send test alert</button>' + (window.BH_lock ? BH_lock.html() : '');
   }
   window.BH_extras = function () { setTimeout(pushLabel, 0); return '<div class="bh-extra">' + extrasHtml() + '</div>'; };
   function backup() {
@@ -1898,7 +2053,7 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
   function greetKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+':'+greetPart()}
   function greetClose(){var g=$('#greet');if(g.hidden)return;g.classList.add('out');setTimeout(function(){g.hidden=true;g.classList.remove('out')},260)}
   window.BH_greet=function(){
-    if(!state.loadedAll||document.hidden)return;var k=greetKey(),seen='';try{seen=localStorage.getItem('hub3.greet')||''}catch(e){}
+    if(!state.loadedAll||document.hidden||window.BH_locked)return;var k=greetKey(),seen='';try{seen=localStorage.getItem('hub3.greet')||''}catch(e){}
     if(seen===k)return;try{localStorage.setItem('hub3.greet',k)}catch(e){}
     var open=state.items.filter(function(x){return x.kind==='todo'&&!x.done}),need=open.filter(function(x){return x.waiting}).length,
       td=new Date(),tk=td.getFullYear()+'-'+String(td.getMonth()+1).padStart(2,'0')+'-'+String(td.getDate()).padStart(2,'0'),due=open.filter(function(x){return x.due&&x.due<=tk}).length,
@@ -2105,6 +2260,7 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
     setSpeaking(true,list[0]);return true;
   }
   function hush(){if(syn)syn.cancel();hdStop();vxQ++;setSpeaking(false)}
+  document.addEventListener('bh:lock',hush);
 
   /* ---------- Brief me: the voice starts at once and a camera glides over the HUD panel being read out ---------- */
   function offAt(el){var x=0,y=0;while(el){x+=el.offsetLeft;y+=el.offsetTop;el=el.offsetParent}return {x:x,y:y}}
