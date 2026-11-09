@@ -46,6 +46,10 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
 #bh-lock .bl-t{margin:0;color:#AAB0BD;font-size:15px;line-height:1.45}
 #bh-lock .bl-go{min-height:52px;border:0;border-radius:12px;background:#FF2A3D;color:#fff;font:700 16px/1 "Chakra Petch",system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 10px 36px rgba(255,42,61,.32)}
 #bh-lock .bl-go:disabled{opacity:.55}
+#bh-lockbtn{position:fixed;z-index:55;top:calc(10px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));width:44px;height:44px;display:grid;place-items:center;padding:0;border-radius:12px;border:1px solid #323847;background:rgba(14,16,22,.88);color:#FF6170;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.side>#bh-lockbtn{position:static;z-index:auto;box-shadow:none;border-radius:10px;-webkit-backdrop-filter:none;backdrop-filter:none}
+@media (max-width:900px){html .side{grid-template-columns:auto minmax(0,1fr) auto auto}}
+#bh-lockbtn:hover,#bh-lockbtn:focus-visible{border-color:#FF2A3D;color:#fff;box-shadow:0 0 0 3px rgba(255,42,61,.22),0 8px 24px rgba(0,0,0,.5);outline:none}
 </style>
 <script>window.BH_CFG={"url": "https://pueaklvxhmnghirehtxh.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1ZWFrbHZ4aG1uZ2hpcmVodHhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxMDQxNTgsImV4cCI6MjEwOTY4MDE1OH0.dTSPTxkqzMAwpvIV7YPSUB4ikRHDp39pbIon6lDu8g4"};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -166,6 +170,25 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
     }
   }
   function lockNow() { if (active() && !window.BH_locked) show('unlock'); }
+  /* Lock button (top right) and Option/Alt+L: lock now, or offer setup first if this device has no fingerprint yet */
+  function press() {
+    if (window.BH_locked) return;
+    if (!supported) return say('This browser cannot use a fingerprint, so the lock is not available here.');
+    var s = st(); if (!s.cred) return show('setup');
+    if (!s.on) set({ on: true });
+    lockNow(); refresh();
+  }
+  function lockBtn() {
+    if (!supported || document.getElementById('bh-lockbtn')) return;
+    var b = document.createElement('button'); b.id = 'bh-lockbtn'; b.type = 'button'; b.title = 'Lock (Option/Alt+L)'; b.setAttribute('aria-label', 'Lock Command Centre');
+    b.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+    b.addEventListener('click', press);
+    /* desktop: floats top right. Phone/tablet: sits in the top bar beside the narrator button so nothing is covered. */
+    var mq = window.matchMedia('(max-width:900px)'), place = function () { var v = document.querySelector('.side>.vbtn'); if (mq.matches && v) v.after(b); else document.body.appendChild(b); };
+    place(); if (mq.addEventListener) mq.addEventListener('change', place);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', lockBtn); else lockBtn();
+  document.addEventListener('keydown', function (e) { if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyL') { e.preventDefault(); press(); } });
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-bh^="lock"]'); if (b) act(b.dataset.bh); });
 
   /* lock on load, after being hidden, and when idle */
