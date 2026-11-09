@@ -46,10 +46,6 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
 #bh-lock .bl-t{margin:0;color:#AAB0BD;font-size:15px;line-height:1.45}
 #bh-lock .bl-go{min-height:52px;border:0;border-radius:12px;background:#FF2A3D;color:#fff;font:700 16px/1 "Chakra Petch",system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 10px 36px rgba(255,42,61,.32)}
 #bh-lock .bl-go:disabled{opacity:.55}
-#bh-lockbtn{position:fixed;z-index:55;top:calc(10px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));width:44px;height:44px;display:grid;place-items:center;padding:0;border-radius:12px;border:1px solid #323847;background:rgba(14,16,22,.88);color:#FF6170;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
-.side>#bh-lockbtn{position:static;z-index:auto;box-shadow:none;border-radius:10px;-webkit-backdrop-filter:none;backdrop-filter:none}
-@media (max-width:900px){html .side{grid-template-columns:auto minmax(0,1fr) auto auto}}
-#bh-lockbtn:hover,#bh-lockbtn:focus-visible{border-color:#FF2A3D;color:#fff;box-shadow:0 0 0 3px rgba(255,42,61,.22),0 8px 24px rgba(0,0,0,.5);outline:none}
 </style>
 <script>window.BH_CFG={"url": "https://pueaklvxhmnghirehtxh.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1ZWFrbHZ4aG1uZ2hpcmVodHhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxMDQxNTgsImV4cCI6MjEwOTY4MDE1OH0.dTSPTxkqzMAwpvIV7YPSUB4ikRHDp39pbIon6lDu8g4"};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -167,7 +163,7 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
     }
   }
   function lockNow() { if (active() && !window.BH_locked) show('unlock'); }
-  /* Lock button (top right) and Option/Alt+L: lock now, or offer setup first if this device has no fingerprint yet */
+  /* Lock button (header bar) and Option/Alt+L: lock now, or offer setup first if this device has no fingerprint yet */
   function press() {
     if (window.BH_locked) return;
     if (!supported) return say('This browser cannot use a fingerprint, so the lock is not available here.');
@@ -175,25 +171,19 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
     if (!s.on) set({ on: true });
     lockNow(); refresh();
   }
-  function lockBtn() {
-    if (!supported || document.getElementById('bh-lockbtn')) return;
-    var b = document.createElement('button'); b.id = 'bh-lockbtn'; b.type = 'button'; b.title = 'Lock (Option/Alt+L)'; b.setAttribute('aria-label', 'Lock Command Centre');
-    b.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-    b.addEventListener('click', press);
-    /* desktop: floats top right. Phone/tablet: sits in the top bar beside the narrator button so nothing is covered. */
-    var mq = window.matchMedia('(max-width:900px)'), place = function () { var v = document.querySelector('.side>.vbtn'); if (mq.matches && v) v.after(b); else document.body.appendChild(b); };
-    place(); if (mq.addEventListener) mq.addEventListener('change', place);
+  /* the padlock square lives in the Command Centre header bar (rendered by the app); this returns its markup */
+  function btn() {
+    return supported ? '<button class="ht-sq" type="button" data-bhbtn title="Lock (Option/Alt+L)" aria-label="Lock Command Centre"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>' : '';
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', lockBtn); else lockBtn();
   document.addEventListener('keydown', function (e) { if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyL') { e.preventDefault(); press(); } });
-  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-bh^="lock"]'); if (b) act(b.dataset.bh); });
+  document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-bh^="lock"],[data-bhbtn]'); if (!t) return; if (t.hasAttribute('data-bhbtn')) press(); else act(t.dataset.bh); });
 
   /* lock on load only; after that it stays unlocked until the user locks it */
   window.BH_locked = active();
   if (active()) { root.classList.add('bh-locked'); show(supported ? 'unlock' : 'unsupported'); }
 
   window.BH_lock = {
-    html: html, refresh: refresh, lockNow: lockNow,
+    html: html, btn: btn, refresh: refresh, lockNow: lockNow,
     after: function (f) { if (window.BH_locked) pend.push(f); else f(); },
     signedIn: function () {
       var s = st(); if (window.BH_locked || s.cred || s.skip) return;
@@ -858,7 +848,7 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
 .clock{font:800 28px/1 var(--f-led);color:var(--red);letter-spacing:.06em;text-shadow:0 0 8px rgba(255,42,61,.8),0 0 22px rgba(255,42,61,.45);font-variant-numeric:tabular-nums}
 .ht-date{display:flex;align-items:center;gap:8px;font:500 10px/1.4 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);white-space:nowrap}
 .ht-date .pill-l{margin-top:0}
-.ht-cards .ht-voice{align-self:center;flex:none}
+.ht-cards .ht-act{align-self:center;flex:none}
 .hud .ns-btn svg{width:12px;height:12px}
 
 .gc-time{text-align:left;padding:10px 12px 9px;border:1px solid var(--hudl);border-radius:8px;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.35));box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 14px 28px -16px rgba(0,0,0,.95);backdrop-filter:blur(3px)}
@@ -1008,7 +998,7 @@ body{background-color:var(--bg);background-image:radial-gradient(1200px 500px at
   .ht-title span{display:block;margin-top:6px}
   .ht-sub{font-size:12px}
   .ht-m{max-width:none}
-  .ht-cards{justify-content:stretch}.ht-card{flex:1 1 140px;max-width:none}.ht-time{align-items:flex-start;text-align:left}.ht-cards .ht-voice{flex:1 1 100%;justify-content:center}.globe-p .hp-h>.hp-t:last-child{display:none}
+  .ht-cards{justify-content:stretch}.ht-card{flex:1 1 140px;max-width:none}.ht-time{align-items:flex-start;text-align:left}.ht-cards .ht-act{flex:1 1 100%}.ht-act .ht-voice{justify-content:center}.globe-p .hp-h>.hp-t:last-child{display:none}
   .clock{font-size:24px}
   .kpis{grid-template-columns:minmax(0,1fr)}
 }
@@ -1046,6 +1036,11 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
 @keyframes eq{0%,100%{height:25%}50%{height:100%}}
 .ht-voice{display:inline-flex;white-space:nowrap;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--red) 55%,transparent);background:var(--redd);color:var(--ink);border-radius:8px;padding:9px 12px;font:600 11px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 18px -6px var(--redg)}
 .ht-voice .ico{width:16px;height:16px;color:var(--red)}
+.ht-act{display:flex;flex-direction:column;align-items:stretch;gap:8px}.ht-sqs{display:flex;gap:8px}
+.ht-sq{width:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;border-radius:8px;border:1px solid var(--hudl);background:#0b0d12;color:#FF6170;cursor:pointer}
+.ht-sq:hover,.ht-sq:focus-visible{border-color:var(--red);color:#fff;box-shadow:0 0 0 3px rgba(255,42,61,.22);outline:none}
+.ht-ns{color:#7B8393}.ht-ns b{font:700 8px/1 var(--f-mono);letter-spacing:.14em}
+.ht-ns[aria-checked=true]{color:var(--red);border-color:var(--red);background:var(--redd);box-shadow:0 0 14px -3px var(--redg)}.ht-ns[aria-checked=true] svg{fill:currentColor}
 .tabbar{display:none}
 .sheet-back{position:fixed;inset:0;z-index:55;background:rgba(3,4,6,.62);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:flex;align-items:stretch;justify-content:flex-end}
 .sheet{width:min(460px,100%);height:100%;overflow:auto;overscroll-behavior:contain;background:var(--surface);border-left:1px solid var(--line2);padding:calc(20px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) 20px;display:flex;flex-direction:column;gap:18px;box-shadow:-30px 0 80px -20px rgba(0,0,0,.7);animation:sheetIn .26s cubic-bezier(.2,.8,.2,1)}
@@ -1595,7 +1590,8 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
       '<div class="ht-sub">'+hi+', Jenson · <b>'+S.need+' waiting on you</b> · '+ps.length+' projects · '+S.doneWk+' done this week</div></div>'+
       '<div class="ht-cards"><a class="ht-card ht-m" href="#milestones" aria-label="Rank '+esc(S.rank)+', '+(S.ri+1)+' of '+RANKS.length+'"><div class="row"><span>Rank</span><span class="stars" aria-hidden="true">'+stars+'</span></div><div class="ht-rank">'+esc(S.rank)+'</div>'+segbar(S.xp,20)+'<div class="row"><span>'+(S.next?(S.next[0]-S.done)+' to '+esc(S.next[1]):'Top rank')+'</span><span>XP '+S.xp+'%</span></div></a>'+
       '<div class="ht-card ht-time"><div class="clock" id="hud-clock" aria-label="Time">'+clockTxt()+'</div><div class="ht-date"><span>'+dtx+'</span>'+live+'</div></div>'+
-      '<button class="ht-voice" data-act="vxsay" data-v="brief">'+ico('wave')+'Brief me</button></div></header>';
+      '<div class="ht-act"><button class="ht-voice" data-act="vxsay" data-v="brief">'+ico('wave')+'Brief me</button>'+
+      '<div class="ht-sqs">'+(window.BH_lock?BH_lock.btn():'')+'<button class="ht-sq ht-ns" type="button" role="switch" aria-checked="'+!!(state.night&&state.night.on)+'" data-act="night" title="Night Shift: '+((state.night&&state.night.on)?'on':'off')+'" aria-label="Night Shift '+((state.night&&state.night.on)?'on':'off')+'"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><b>'+((state.night&&state.night.on)?'ON':'OFF')+'</b></button></div></div></div></header>';
     // night shift (slim strip; Report expands it)
     var N=state.night||{},NR=nightLatest(),non=!!N.on,nrun=!!N.running,tm=function(x){return new Date(x).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})};
     var nst=nrun?'<span class="ns-dot run"></span>Running · wave '+(N.wave||1)+(N.lastStart?' since '+tm(N.lastStart):''):non?'<span class="ns-dot on"></span>Armed · builds from 22:30, report at 10:00':'<span class="ns-dot"></span>Off · flip to build overnight';
