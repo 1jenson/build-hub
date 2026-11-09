@@ -55,12 +55,11 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>/* Device lock (WebAuthn: Touch ID / Face ID). A front door on THIS device only. It does not replace Supabase sign-in or row-level security, which still protect the data. */
 (function () {
-  var K = 'bh.lock', root = document.documentElement, el, mode = '', prev = 'unlock', pend = [], hiddenAt = 0, lastAct = Date.now(), said = false;
+  var K = 'bh.lock', root = document.documentElement, el, mode = '', prev = 'unlock', pend = [], said = false;
   var supported = !!(window.isSecureContext && window.PublicKeyCredential && navigator.credentials && navigator.credentials.create && navigator.credentials.get);
-  var IDLES = [[0, 'leaving the app'], [60, '1 min'], [120, '2 min'], [300, '5 min'], [900, '15 min']];
   function rd() { try { return JSON.parse(localStorage.getItem(K)) || {}; } catch (e) { return {}; } }
   function set(p) { try { localStorage.setItem(K, JSON.stringify(Object.assign(rd(), p))); } catch (e) {} }
-  function st() { var s = rd(); return { cred: s.cred || '', on: s.on !== false, idle: typeof s.idle === 'number' ? s.idle : 120, skip: !!s.skip }; }
+  function st() { var s = rd(); return { cred: s.cred || '', on: s.on !== false, skip: !!s.skip }; }
   function active() { var s = st(); return !!(s.cred && s.on); }
   function say(t) { if (window.BH_toast) window.BH_toast(t); }
   function rnd(n) { return crypto.getRandomValues(new Uint8Array(n)); }
@@ -123,7 +122,7 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
     var f = g.hidden ? $('#bl-alt') : g; try { f.focus({ preventScroll: true }); } catch (e) {}
   }
   function hide() {
-    el.hidden = true; root.classList.remove('bh-locked'); window.BH_locked = false; lastAct = Date.now(); refresh();
+    el.hidden = true; root.classList.remove('bh-locked'); window.BH_locked = false; refresh();
     var p = pend; pend = []; p.forEach(function (f) { try { f(); } catch (e) { console.error(e); } });
     setTimeout(function () { if (window.BH_greet) window.BH_greet(); }, 600);
   }
@@ -140,23 +139,21 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
   }
 
   /* settings */
-  function idleLabel() { var i = st().idle, r = IDLES.filter(function (x) { return x[0] === i; })[0]; return r ? r[1] : Math.round(i / 60) + ' min'; }
   function labels() {
     var s = st();
-    return { lock: 'Fingerprint lock: ' + (!supported ? 'not available' : active() ? 'on' : 'off'), lockre: 'Re-register fingerprint', lockidle: 'Lock after: ' + idleLabel(), locknow: 'Lock now',
-      hidden: { lockre: !supported || !s.cred, lockidle: !active(), locknow: !active() } };
+    return { lock: 'Fingerprint lock: ' + (!supported ? 'not available' : active() ? 'on' : 'off'), lockre: 'Re-register fingerprint', locknow: 'Lock now',
+      hidden: { lockre: !supported || !s.cred, locknow: !active() } };
   }
   function refresh() {
     var L = labels();
     document.querySelectorAll('[data-bh^="lock"]').forEach(function (b) { var k = b.dataset.bh; b.textContent = L[k]; b.hidden = !!L.hidden[k]; if (k === 'lock') b.setAttribute('aria-pressed', String(active())); });
   }
   function html() {
-    var L = labels(); return ['lock', 'lockre', 'lockidle', 'locknow'].map(function (k) { return '<button type="button" class="bh-out" data-bh="' + k + '"' + (L.hidden[k] ? ' hidden' : '') + '>' + L[k] + '</button>'; }).join('');
+    var L = labels(); return ['lock', 'lockre', 'locknow'].map(function (k) { return '<button type="button" class="bh-out" data-bh="' + k + '"' + (L.hidden[k] ? ' hidden' : '') + '>' + L[k] + '</button>'; }).join('');
   }
   function act(a) {
     var s = st();
     if (a === 'locknow') return lockNow();
-    if (a === 'lockidle') { var i = 0; IDLES.forEach(function (x, n) { if (x[0] === s.idle) i = n; }); set({ idle: IDLES[(i + 1) % IDLES.length][0] }); return refresh(); }
     if (!supported) return say('This browser cannot use a fingerprint, so the lock is not available here.');
     var fail = function (e) { say(why(e)); };
     if (a === 'lock') {
@@ -191,19 +188,9 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
   document.addEventListener('keydown', function (e) { if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyL') { e.preventDefault(); press(); } });
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-bh^="lock"]'); if (b) act(b.dataset.bh); });
 
-  /* lock on load, after being hidden, and when idle */
+  /* lock on load only; after that it stays unlocked until the user locks it */
   window.BH_locked = active();
   if (active()) { root.classList.add('bh-locked'); show(supported ? 'unlock' : 'unsupported'); }
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
-    if (hiddenAt && active() && !window.BH_locked && Date.now() - hiddenAt >= st().idle * 1000) show('unlock');
-    hiddenAt = 0; lastAct = Date.now();
-  });
-  ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach(function (t) { addEventListener(t, function () { if (!window.BH_locked) lastAct = Date.now(); }, { passive: true, capture: true }); });
-  setInterval(function () {
-    var i = st().idle; if (!active() || window.BH_locked || !i || document.hidden || (document.body && document.body.classList.contains('speaking'))) return;
-    if (Date.now() - lastAct >= i * 1000) show('unlock');
-  }, 10000);
 
   window.BH_lock = {
     html: html, refresh: refresh, lockNow: lockNow,
