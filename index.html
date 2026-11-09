@@ -173,7 +173,7 @@ html.bh-locked{overflow:hidden}html.bh-locked body>*:not(#bh-lock){visibility:hi
   }
   /* the padlock square lives in the Command Centre header bar (rendered by the app); this returns its markup */
   function btn() {
-    return supported ? '<button class="ht-sq" type="button" data-bhbtn title="Lock (Option/Alt+L)" aria-label="Lock Command Centre"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>' : '';
+    return supported ? '<button class="ht-sq" type="button" data-bhbtn title="Lock (Option/Alt+L)" aria-label="Lock Command Centre"><svg viewBox="3 2 18 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>' : '';
   }
   document.addEventListener('keydown', function (e) { if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyL') { e.preventDefault(); press(); } });
   document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-bh^="lock"],[data-bhbtn]'); if (!t) return; if (t.hasAttribute('data-bhbtn')) press(); else act(t.dataset.bh); });
@@ -1037,10 +1037,10 @@ body.speaking .eq i{animation:eq .8s ease-in-out infinite}
 .ht-voice{display:inline-flex;white-space:nowrap;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--red) 55%,transparent);background:var(--redd);color:var(--ink);border-radius:8px;padding:9px 12px;font:600 11px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 18px -6px var(--redg)}
 .ht-voice .ico{width:16px;height:16px;color:var(--red)}
 .ht-act{display:flex;flex-direction:column;align-items:stretch;gap:8px}.ht-sqs{display:flex;gap:8px}
-.ht-sq{width:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;border-radius:8px;border:1px solid var(--hudl);background:#0b0d12;color:#FF6170;cursor:pointer}
-.ht-sq:hover,.ht-sq:focus-visible{border-color:var(--red);color:#fff;box-shadow:0 0 0 3px rgba(255,42,61,.22);outline:none}
-.ht-ns{color:#7B8393}.ht-ns b{font:700 8px/1 var(--f-mono);letter-spacing:.14em}
-.ht-ns[aria-checked=true]{color:var(--red);border-color:var(--red);background:var(--redd);box-shadow:0 0 14px -3px var(--redg)}.ht-ns[aria-checked=true] svg{fill:currentColor}
+.ht-sq{width:44px;height:44px;display:grid;place-items:center;padding:0;border-radius:8px;border:1px solid color-mix(in srgb,var(--red) 55%,transparent);background:var(--redd);color:var(--red);cursor:pointer;box-shadow:0 0 18px -6px var(--redg)}
+.ht-sq svg{width:26px;height:26px}
+.ht-sq:hover,.ht-sq:focus-visible{border-color:var(--red);color:#fff;outline:none}
+.ht-ns[aria-checked=true]{border-color:var(--red);background:rgba(255,42,61,.22);box-shadow:0 0 18px -2px var(--redg),inset 0 0 10px rgba(255,42,61,.3)}.ht-ns[aria-checked=true] svg{fill:currentColor;filter:drop-shadow(0 0 4px var(--redg))}
 .tabbar{display:none}
 .sheet-back{position:fixed;inset:0;z-index:55;background:rgba(3,4,6,.62);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:flex;align-items:stretch;justify-content:flex-end}
 .sheet{width:min(460px,100%);height:100%;overflow:auto;overscroll-behavior:contain;background:var(--surface);border-left:1px solid var(--line2);padding:calc(20px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) 20px;display:flex;flex-direction:column;gap:18px;box-shadow:-30px 0 80px -20px rgba(0,0,0,.7);animation:sheetIn .26s cubic-bezier(.2,.8,.2,1)}
@@ -1591,7 +1591,7 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
       '<div class="ht-cards"><a class="ht-card ht-m" href="#milestones" aria-label="Rank '+esc(S.rank)+', '+(S.ri+1)+' of '+RANKS.length+'"><div class="row"><span>Rank</span><span class="stars" aria-hidden="true">'+stars+'</span></div><div class="ht-rank">'+esc(S.rank)+'</div>'+segbar(S.xp,20)+'<div class="row"><span>'+(S.next?(S.next[0]-S.done)+' to '+esc(S.next[1]):'Top rank')+'</span><span>XP '+S.xp+'%</span></div></a>'+
       '<div class="ht-card ht-time"><div class="clock" id="hud-clock" aria-label="Time">'+clockTxt()+'</div><div class="ht-date"><span>'+dtx+'</span>'+live+'</div></div>'+
       '<div class="ht-act"><button class="ht-voice" data-act="vxsay" data-v="brief">'+ico('wave')+'Brief me</button>'+
-      '<div class="ht-sqs">'+(window.BH_lock?BH_lock.btn():'')+'<button class="ht-sq ht-ns" type="button" role="switch" aria-checked="'+!!(state.night&&state.night.on)+'" data-act="night" title="Night Shift: '+((state.night&&state.night.on)?'on':'off')+'" aria-label="Night Shift '+((state.night&&state.night.on)?'on':'off')+'"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><b>'+((state.night&&state.night.on)?'ON':'OFF')+'</b></button></div></div></div></header>';
+      '<div class="ht-sqs">'+(window.BH_lock?BH_lock.btn():'')+'<button class="ht-sq ht-ns" type="button" role="switch" aria-checked="'+!!(state.night&&state.night.on)+'" data-act="night" title="Night Shift: '+((state.night&&state.night.on)?'on':'off')+'" aria-label="Night Shift '+((state.night&&state.night.on)?'on':'off')+'"><svg viewBox="2 2 20 20" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button></div></div></div></header>';
     // night shift (slim strip; Report expands it)
     var N=state.night||{},NR=nightLatest(),non=!!N.on,nrun=!!N.running,tm=function(x){return new Date(x).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})};
     var nst=nrun?'<span class="ns-dot run"></span>Running · wave '+(N.wave||1)+(N.lastStart?' since '+tm(N.lastStart):''):non?'<span class="ns-dot on"></span>Armed · builds from 22:30, report at 10:00':'<span class="ns-dot"></span>Off · flip to build overnight';
