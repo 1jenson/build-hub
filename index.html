@@ -1191,6 +1191,144 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
   .vx-set{grid-template-columns:minmax(0,1fr)}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+/* ===== Life OS: Today, Habits, Mood (all classes prefixed lf-) ===== */
+.lf-page{display:flex;flex-direction:column;gap:18px;min-width:0}
+.lf-page .head{gap:8px}
+.lf-page .head h1{font-size:clamp(30px,4.2vw,46px)}
+.lf-lede{color:var(--ink2);font-size:16px;max-width:62ch;margin:0}
+.lf-lede b{color:var(--ink);font-weight:600}
+.lf-pair{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;align-items:stretch}
+.lf-pair2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:900px){.lf-pair,.lf-pair2{grid-template-columns:minmax(0,1fr)}}
+.lf-sub{color:var(--ink3);font:500 11px/1.4 var(--f-mono);letter-spacing:.04em}
+.lf-note{color:var(--ink2);font-size:14px;margin:0}
+.lf-link{color:var(--red2);font:500 11px/1 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;text-decoration:none}
+
+/* habit chips on Today */
+.lf-hrow{display:flex;align-items:center;gap:14px}
+.lf-hrow b{display:block;font:700 18px/1.2 var(--f-display);letter-spacing:.02em}
+.lf-ring .in b{font-size:15px}
+.lf-ring.full .fg{animation:lfglow 2.4s ease-in-out infinite}
+@keyframes lfglow{50%{filter:drop-shadow(0 0 12px color-mix(in srgb,var(--rc) 90%,transparent))}}
+.lf-hchips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:700px){.lf-hchips{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}}
+.lf-hb{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;min-height:52px;padding:8px 10px;border-radius:12px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink);text-align:left;position:relative;transition:border-color .18s,background .18s,transform .12s}
+.lf-hb:active{transform:scale(.97)}
+.lf-hi{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--bg2);color:var(--ink2);transition:background .18s,color .18s}
+.lf-hi .ico{width:19px;height:19px}
+.lf-hn{font-weight:600;font-size:14px;line-height:1.2;overflow-wrap:anywhere}
+.lf-hs{display:inline-flex;align-items:center;gap:3px;font:600 11px/1 var(--f-mono);color:var(--ink3)}
+.lf-hb[aria-pressed="true"]{border-color:color-mix(in srgb,var(--ok) 65%,transparent);background:color-mix(in srgb,var(--ok) 13%,var(--surface2))}
+.lf-hb[aria-pressed="true"] .lf-hi{background:var(--ok);color:#04140C}
+.lf-hb.pop .lf-hi{animation:lfpop .42s var(--ease-out)}
+@keyframes lfpop{0%{transform:scale(.7)}55%{transform:scale(1.18)}100%{transform:scale(1)}}
+.lf-flame{width:14px;height:14px;fill:var(--steel2);stroke:none;transform-origin:50% 90%}
+.lf-flame.on{fill:#FF8A3D;filter:drop-shadow(0 0 4px rgba(255,90,40,.7));animation:lfflame 1.7s ease-in-out infinite}
+@keyframes lfflame{0%,100%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.1,1.16) rotate(2deg)}}
+
+/* mood */
+.lf-faces{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.lf-face{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 2px 7px;min-height:66px;border-radius:12px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink3);font:600 10px/1 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;transition:border-color .18s,background .18s,color .18s,transform .12s}
+.lf-face:active{transform:scale(.95)}
+.lf-fs{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.lf-fs .e{fill:currentColor;stroke:none}
+.lf-fs .o{fill:currentColor;fill-opacity:.22}
+.lf-face[aria-pressed="true"]{color:var(--mc);border-color:var(--mc);background:color-mix(in srgb,var(--mc) 14%,var(--surface2))}
+.lf-face[aria-pressed="false"]{color:color-mix(in srgb,var(--mc) 55%,var(--ink3))}
+.lf-face.pop .lf-fs{animation:lfpop .42s var(--ease-out)}
+.lf-en{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.lf-en button{min-height:44px;border-radius:10px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink2);font:600 13px/1 var(--f-mono)}
+.lf-en button[aria-pressed="true"]{background:var(--cyan);border-color:var(--cyan);color:#06070A}
+.lf-lab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:7px}
+.lf-form{display:flex;gap:8px}
+.lf-form .field{flex:1}
+.lf-trend{width:100%;height:auto;display:block;overflow:visible}
+.lf-trend .ax{stroke:var(--line2);stroke-width:1}
+.lf-trend text{fill:var(--ink3);font:500 9px var(--f-mono)}
+.lf-trend .en{fill:var(--ink);stroke:var(--bg);stroke-width:1.2}
+.lf-trend .bar-m{transform-box:fill-box;transform-origin:50% 100%;animation:lfgrow .55s var(--ease-out) both}
+@keyframes lfgrow{from{transform:scaleY(0)}}
+.lf-stats{display:flex;gap:18px;flex-wrap:wrap}
+.lf-stats b{display:block;font:800 26px/1 var(--f-display);font-stretch:90%}
+.lf-notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.lf-notes li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;padding:10px 0;border-top:1px solid var(--hudl)}
+.lf-notes li:first-child{border-top:0}
+.lf-notes .lf-fs{width:26px;height:26px;color:var(--mc)}
+.lf-notes small{font:500 11px/1 var(--f-mono);color:var(--ink3);display:block;margin-bottom:3px}
+.lf-notes span{overflow-wrap:anywhere;font-size:14.5px}
+
+/* to-do list */
+.lf-add{display:flex;flex-direction:column;gap:8px}
+.lf-add-r{display:flex;gap:8px}
+.lf-add-r .field{flex:1;font-size:16px}
+.lf-add-o{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.lf-add-o .field{font-size:16px;max-width:100%}
+.lf-add-o select[hidden]{display:none}
+.lf-filter{display:flex;gap:8px;flex-wrap:wrap}
+.lf-list .cb::before{content:"";position:absolute;inset:-9px}
+.lf-ar{font:600 10.5px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:5px 7px;border-radius:7px;border:1px solid}
+.lf-ar.b{color:var(--red2);border-color:color-mix(in srgb,var(--red) 55%,transparent);background:var(--redd)}
+.lf-ar.l{color:var(--c1);border-color:color-mix(in srgb,var(--c1) 55%,transparent);background:color-mix(in srgb,var(--c1) 10%,transparent)}
+.lf-go{align-self:center;display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:0 11px;border-radius:9px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink2);font:600 11px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.lf-go:hover{color:var(--ink);border-color:var(--ink3)}
+.lf-go .ico{width:14px;height:14px}
+.lf-pan{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;padding-top:6px}
+.lf-more{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:0 16px;border-radius:14px;border:1px dashed var(--line2);background:none;color:var(--ink2);font:600 12px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+.lf-more:hover{border-color:var(--ink3);color:var(--ink)}
+.lf-sech{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 4px}
+.lf-sech h3{font-size:16px;font-weight:700;font-stretch:105%}
+.lf-sech .btn{margin-left:auto}
+.lf-done .it{opacity:.7}
+
+/* habits page */
+.lf-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.lf-wk{display:flex;align-items:center;gap:8px}
+.lf-wk button{width:42px;height:42px;border-radius:10px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink);font-size:20px;line-height:1}
+.lf-wk button:disabled{opacity:.35}
+.lf-wk b{font:600 13px/1.2 var(--f-mono);min-width:110px;text-align:center}
+.lf-hcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:12px}
+.lf-hc{display:flex;flex-direction:column;gap:12px;min-width:0;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.lf-hc-h{display:flex;align-items:center;gap:10px;min-width:0}
+.lf-hc-h .lf-hi{background:var(--surface2)}
+.lf-hc-t{min-width:0;flex:1}
+.lf-hc-t b{display:block;font:700 17px/1.2 var(--f-display);overflow-wrap:anywhere}
+.lf-streak{display:inline-flex;align-items:center;gap:5px;font:700 12px/1 var(--f-mono);color:var(--ink2);padding:6px 9px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);white-space:nowrap}
+.lf-streak.on{color:#FFB27A;border-color:rgba(255,138,61,.45)}
+.lf-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.lf-day{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0 7px;min-height:62px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--ink3);font:600 10px/1 var(--f-mono)}
+.lf-day span{opacity:.8}
+.lf-day i{width:24px;height:24px;border-radius:8px;border:2px solid var(--line2);display:grid;place-items:center}
+.lf-day i svg{width:14px;height:14px;fill:none;stroke:#04140C;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.lf-day[aria-pressed="true"] i{background:var(--ok);border-color:var(--ok)}
+.lf-day[aria-pressed="true"] i svg{opacity:1}
+.lf-day.now{border-color:var(--cyan);color:var(--ink)}
+.lf-day:disabled{opacity:.3;cursor:not-allowed}
+.lf-day.pop i{animation:lfpop .4s var(--ease-out)}
+.lf-wkrow{display:flex;align-items:center;gap:12px}
+.lf-wkrow .bar{flex:1}
+.lf-edit{display:flex;flex-direction:column;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
+.lf-icons{display:flex;gap:6px;flex-wrap:wrap}
+.lf-icons button{width:42px;height:42px;border-radius:10px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink2);display:grid;place-items:center}
+.lf-icons button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.lf-tg{display:flex;gap:6px}
+.lf-tg button{flex:1;min-height:42px;border-radius:10px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink2);font:600 13px/1 var(--f-mono)}
+.lf-tg button[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#fff}
+.lf-acts{display:flex;gap:8px;flex-wrap:wrap}
+.lf-arch{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.lf-arch li{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.lf-arch li span{flex:1;min-width:0;overflow-wrap:anywhere}
+@media (max-width:620px){
+  .lf-pair,.lf-pair2{gap:10px}
+  .lf-go span{display:none}
+  .lf-go{padding:0 9px}
+  .lf-wk b{min-width:96px}
+}
+.lf-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.lf-ra{display:flex;gap:6px;margin-left:auto}
+.lf-list .it{grid-template-columns:auto minmax(0,1fr);padding:12px 14px}
+.lf-list .it-m{align-items:center}
+.lf-todo{padding-bottom:6px}
+.lf-todo .list{border-radius:12px}
 </style>
 
 <div class="app">
@@ -1296,12 +1434,15 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
     plus:'<path d="M12 5v14M5 12h14"/>',
     more:'<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
     wave:'<path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/>',
-    star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'
+    star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+    today:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M9 15l2 2 4-4"/>',
+    habits:'<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>',
+    mood:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14c1 1.5 2 2 3.5 2s2.5-.5 3.5-2M9 10h.01M15 10h.01"/>'
   };
   function ico(n){return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+I[n]+'</svg>'}
-  var VIEWS=[['home','Overview','home'],['needs','Needs you','needs'],['projects','Projects','projects'],['board','Board','board'],['activity','Activity','activity'],['budgets','Budgets','budgets'],['milestones','Milestones','milestones'],['log','Log','log'],['ideas','Ideas and notes','ideas']];
+  var VIEWS=[['home','Overview','home'],['today','Today','today'],['habits','Habits','habits'],['mood','Mood','mood'],['needs','Needs you','needs'],['projects','Projects','projects'],['board','Board','board'],['activity','Activity','activity'],['budgets','Budgets','budgets'],['milestones','Milestones','milestones'],['log','Log','log'],['ideas','Ideas and notes','ideas']];
 
-  var state={booting:true,hash:'',projects:[],items:[],log:[],budgets:[],settings:null,db:null,canWrite:true,loadedAll:false,err:null,slow:false,pending:false,
+  var state={booting:true,hash:'',projects:[],items:[],log:[],budgets:[],habits:[],habitlog:[],mood:[],tasks:[],settings:null,db:null,canWrite:true,loadedAll:false,err:null,slow:false,pending:false,
     open:null,confirm:null,q:'',tab:{},showDone:{},editSum:false,newProj:false,editGoal:false,editBudget:null,addSpend:null,
     pf:'all',ps:'order',lf:'all',lk:'all',ik:'all',ip:'all',qk:'todo',qaProj:'',qaCount:0,qaRecent:[],counter:'glow'};
   try{var t=JSON.parse(localStorage.getItem('hub3')||'{}');['tab','counter','pf','ps'].forEach(function(k){if(t[k]!=null)state[k]=t[k]})}catch(e){}
@@ -1892,7 +2033,7 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
   /* ---------- render ---------- */
   function renderNav(){
     var r=route(),S=stats(),ps=sortedProjects();
-    var cnt={needs:S.need,projects:ps.length,ideas:state.items.filter(function(i){return i.kind!=='todo'}).length,budgets:state.budgets.length};
+    var cnt={today:lfOpenToday(),needs:S.need,projects:ps.length,ideas:state.items.filter(function(i){return i.kind!=='todo'}).length,budgets:state.budgets.length};
     $('#nav').innerHTML=VIEWS.map(function(v){return '<li><a href="#'+v[0]+'"'+(!state.q&&r.v===v[0]?' aria-current="page"':'')+'>'+ico(v[2])+'<span class="nm">'+v[1]+'</span>'+(cnt[v[0]]?'<span class="ct'+(v[0]==='needs'?' hl':'')+'">'+cnt[v[0]]+'</span>':'')+'</a></li>'}).join('');
     $('#pnav').innerHTML=ps.map(function(p){var o=todosOf(p.id).filter(function(i){return !i.done}).length;return '<li><a href="#p-'+esc(p.id)+'" style="'+pvar(p)+'"'+(!state.q&&r.v==='project'&&r.id===p.id?' aria-current="page"':'')+'><i class="pdot"></i><span class="nm">'+esc(p.name)+'</span><span class="ct">'+o+'</span></a></li>'}).join('');
     $('#newp').innerHTML=state.newProj?'<form class="np" data-form="newproj"><input class="field" type="text" id="np-name" placeholder="Project name" aria-label="Project name"><input class="field" type="text" id="np-sum" placeholder="One-line summary" aria-label="Summary"><div style="display:flex;gap:6px"><button class="btn sm" type="submit">Create</button><button class="btn ghost sm" type="button" data-act="newproj">Cancel</button></div></form>':'';
@@ -1912,12 +2053,13 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
   }
   function render(force){
     var a=document.activeElement;
+    if(!force&&a&&a.id==='td-add'&&!state.q&&route().v==='today'&&$('#lf-lists')){lfRepaint();renderNav();return}
     if(!force&&a&&a!==document.body&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&(a.closest('#view')||a.closest('#newp'))){state.pending=true;return}
     state.pending=false;renderNotice();renderNav();
     var r=route(),h,v=$('#view');
     if(state.q)h=viewSearch(state.q);
     else if(r.v==='project')h=viewProject(r.id);
-    else h=({home:viewHome,needs:viewNeeds,projects:viewProjects,board:viewBoard,activity:viewActivity,budgets:viewBudgets,milestones:viewMilestones,log:viewLog,ideas:viewIdeas})[r.v]();
+    else h=({home:viewHome,today:viewToday,habits:viewHabits,mood:viewMood,needs:viewNeeds,projects:viewProjects,board:viewBoard,activity:viewActivity,budgets:viewBudgets,milestones:viewMilestones,log:viewLog,ideas:viewIdeas})[r.v]();
     var y=window.scrollY;v.dataset.counter=state.counter;v.innerHTML=h;animateNums();window.scrollTo(0,y);if(document.getElementById('globe'))mountGlobe();else cancelAnimationFrame(globe.raf);
     if(TR.on)tourCam(true);
     var p=r.v==='project'&&proj(r.id);document.title=state.q?'Search · Command Centre':p?p.name+' · Command Centre':'Command Centre';
@@ -2032,18 +2174,18 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
   function renderMob(){
     var r=route(),S=stats(),cur=state.q?'':r.v;
     var tab=function(h,label,icon,on,extra){return '<a class="tb" href="#'+h+'"'+(on?' aria-current="page"':'')+'>'+ico(icon)+'<span>'+label+'</span>'+(extra||'')+'</a>'};
-    var moreOn=['board','activity','budgets','milestones','log','ideas'].indexOf(cur)>=0;
+    var moreOn=['habits','mood','needs','board','activity','budgets','milestones','log','ideas'].indexOf(cur)>=0,tn=lfOpenToday();
     $('#tbar').innerHTML=tab('home','Overview','home',cur==='home')+
-      tab('needs','Needs','needs',cur==='needs',S.need?'<span class="bd">'+S.need+'</span>':'')+
+      tab('today','Today','today',cur==='today',tn?'<span class="bd">'+tn+'</span>':'')+
       '<button type="button" class="tb add" data-act="qaopen" aria-label="Quick fire: add a to-do, idea, note or log"'+(!state.db||!state.canWrite?' disabled':'')+'><span class="orb">'+ico('plus')+'</span><span>Add</span></button>'+
       tab('projects','Projects','projects',cur==='projects'||cur==='project')+
-      '<button type="button" class="tb" data-act="moreopen"'+(moreOn?' aria-current="page"':'')+'>'+ico('more')+'<span>More</span></button>';
+      '<button type="button" class="tb" data-act="moreopen"'+(moreOn?' aria-current="page"':'')+'>'+ico('more')+'<span>More</span>'+(S.need?'<span class="bd">'+S.need+'</span>':'')+'</button>';
     if(!$('#more').hidden)renderMore();
   }
   function renderMore(){
-    var r=route(),cnt={board:state.projects.length,budgets:state.budgets.length,log:state.log.length,ideas:state.items.filter(function(i){return i.kind!=='todo'}).length};
+    var r=route(),cnt={needs:stats().need,board:state.projects.length,budgets:state.budgets.length,log:state.log.length,ideas:state.items.filter(function(i){return i.kind!=='todo'}).length};
     var h='<span class="sh-grab" aria-hidden="true"></span><div class="sh-h"><h2 id="more-h">More</h2><button type="button" class="x" data-act="moreclose" aria-label="Close">×</button></div>';
-    h+='<div class="mgrid">'+VIEWS.slice(3).map(function(v){return '<a href="#'+v[0]+'"'+(r.v===v[0]?' aria-current="page"':'')+'>'+ico(v[2])+'<span>'+v[1]+'</span>'+(cnt[v[0]]?'<span class="ct">'+cnt[v[0]]+'</span>':'')+'</a>'}).join('')+'</div>';
+    h+='<div class="mgrid">'+VIEWS.filter(function(v){return ['home','today','projects'].indexOf(v[0])<0}).map(function(v){return '<a href="#'+v[0]+'"'+(r.v===v[0]?' aria-current="page"':'')+'>'+ico(v[2])+'<span>'+v[1]+'</span>'+(cnt[v[0]]?'<span class="ct">'+cnt[v[0]]+'</span>':'')+'</a>'}).join('')+'</div>';
     h+='<button type="button" class="vbtn" data-act="vxopen">'+ico('wave')+'<span>Voice narrator</span>'+EQH+'</button>';
     h+='<div class="mrow"><span class="label">Projects</span>'+(state.db&&state.canWrite?'<button type="button" class="btn ghost sm" data-act="mnewproj">+ New project</button>':'')+'</div>';
     h+='<ul class="mlist">'+sortedProjects().map(function(p){var o=todosOf(p.id).filter(function(i){return !i.done}).length;
@@ -2566,18 +2708,275 @@ body.touring .hud .hp:not(.tour-t){opacity:.28}
   $('#vx-rate').addEventListener('change',function(){vxSave();say('This is my new speed.')});
   syncToggles();setSpeaking(false);
 
+  /* ===== LIFE OS: Today, Habits, Mood =====
+     Collections (public.hub_docs, see LIFE-OS.md): tasks, habits, habitlog (doc id = date), mood (doc id = date).
+     Business to-dos stay in `items`; Today shows them with a Business tag. */
+  var LF={tf:'all',aArea:'life',aWhen:'today',aProj:'',more:false,showDone:false,wk:0,edit:null,newH:false,pick:{ico:'star',t:7},hist:7,conf:null,pop:null,ix:{}};
+  try{var lt=JSON.parse(localStorage.getItem('hub3.lf')||'{}');['tf','aArea','hist'].forEach(function(k){if(lt[k]!=null)LF[k]=lt[k]})}catch(e){}
+  function lfSave(){try{localStorage.setItem('hub3.lf',JSON.stringify({tf:LF.tf,aArea:LF.aArea,hist:LF.hist}))}catch(e){}}
+  var LFI={
+    gym:'<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
+    water:'<path d="M12 3.5s6 6.2 6 10.6a6 6 0 0 1-12 0C6 9.7 12 3.5 12 3.5z"/>',
+    steps:'<path d="M8 3.5c2 0 3 2 3 4.5s-1 4-3 4-3-1.5-3-4 1-4.5 3-4.5zM7 15h3v2.5a1.5 1.5 0 0 1-3 0z"/><path d="M16 8.5c2 0 3 2 3 4.5s-1 4-3 4-3-1.500-3-4 1-4.500 3-4.500zM15 20h3"/>',
+    read:'<path d="M4 5.5C6.500 4.500 9.500 4.500 12 6c2.500-1.500 5.500-1.500 8-.5v13c-2.500-1-5.500-1-8 .5-2.500-1.500-5.500-1.500-8-.5z"/><path d="M12 6v13"/>',
+    sleep:'<path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500z"/>',
+    leaf:'<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14"/><path d="M5 19c3-4 6-6 9-8"/>',
+    food:'<path d="M12 7c-2-1.500-6-1-6 4 0 4 2.500 8 6 8s6-4 6-8c0-5-4-5.500-6-4z"/><path d="M12 7c0-2 1-3 3-3.500"/>',
+    sun:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.600 5.600L7 7M17 17l1.400 1.400M5.600 18.400L7 17M17 7l1.400-1.400"/>',
+    heart:'<path d="M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.500A4 4 0 0 1 19 10c0 5.500-7 10-7 10z"/>',
+    pen:'<path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3"/>',
+    phone:'<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2M4 4l16 16"/>',
+    bolt:'<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',
+    star:I.star,x:'<path d="M6 6l12 12M18 6L6 18"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',up:'<path d="M6 14l6-6 6 6"/>',down:'<path d="M6 10l6 6 6-6"/>'
+  };
+  var LFK=['gym','water','steps','read','sleep','leaf','food','sun','heart','pen','phone','bolt'];
+  function lfi(n){return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+(LFI[n]||LFI.star)+'</svg>'}
+  var HDEF=[['gym','Gym','gym'],['water','Drink water','water'],['steps','10K steps','steps'],['read','Read','read']];
+  var MOODS=[[1,'Awful','var(--bad)','<path d="M10 23c2-3 10-3 12 0"/>'],[2,'Low','var(--warn)','<path d="M11 22.500c3-1.600 7-1.600 10 0"/>'],[3,'Okay','var(--ink2)','<path d="M11 21.500h10"/>'],[4,'Good','var(--cyan)','<path d="M11 20c3 2.200 7 2.200 10 0"/>'],[5,'Great','var(--ok)','<path class="o" d="M9.500 19c1 5.500 12 5.500 13 0z"/>']];
+  function lfFace(n){var m=MOODS[n-1];return '<svg class="lf-fs" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13"/><circle class="e" cx="11.500" cy="13" r="1.500"/><circle class="e" cx="20.500" cy="13" r="1.500"/>'+m[3]+'</svg>'}
+  var FLAME='<svg class="lf-flame ON" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-4 3-7 1 1 2 2 2 3 1-2 1-5 1-8z"/></svg>';
+  function flame(on){return FLAME.replace('ON',on?'on':'')}
+  var CHECK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.500l4.500 4.500L19 7.500"/></svg>';
+
+  /* week and streak maths. Weeks run Monday to Sunday. */
+  function wkStart(k){return addDays(k,-((new Date(k+'T12:00').getDay()+6)%7))}
+  function lfIndex(){var ix={};state.habitlog.forEach(function(l){var s={};(l.done||[]).forEach(function(h){s[h]=1});ix[l.id]=s});LF.ix=ix}
+  function hasH(k,h){return !!(LF.ix[k]&&LF.ix[k][h])}
+  function weekCount(w,h,upTo){var n=0,last=upTo||addDays(w,6);for(var i=0;i<7;i++){var k=addDays(w,i);if(k>last)break;if(hasH(k,h))n++}return n}
+  function hStats(h){
+    var T=Math.max(1,Math.min(7,+h.target||7)),t0=today(),w0=wkStart(t0),streak=0,k,w,g;
+    if(T===7){k=hasH(t0,h.id)?t0:addDays(t0,-1);while(hasH(k,h.id)&&streak<1200){streak++;k=addDays(k,-1)}}
+    else{w=weekCount(w0,h.id)>=T?w0:addDays(w0,-7);g=0;while(weekCount(w,h.id)>=T&&g<300){streak++;w=addDays(w,-7);g++}}
+    return{target:T,week:weekCount(w0,h.id),streak:streak,unit:T===7?'d':'wk',doneToday:hasH(t0,h.id)};
+  }
+  function activeHabits(){return state.habits.filter(function(h){return !h.archived}).sort(byOrder)}
+  function archivedHabits(){return state.habits.filter(function(h){return h.archived}).sort(byOrder)}
+  function moodOf(k){for(var i=0;i<state.mood.length;i++)if(state.mood[i].id===k)return state.mood[i];return null}
+
+  /* to-do assembly: Life tasks (tasks) plus Business to-dos (items) planned for today */
+  function lfNorm(){
+    var t=today(),out=[];
+    state.tasks.forEach(function(x){out.push({kind:'life',id:x.id,text:x.text||'',done:!!x.done,doneAt:x.doneAt||'',due:x.due||'',order:x.order||0,project:''})});
+    state.items.forEach(function(x){if(x.kind==='todo')out.push({kind:'biz',id:x.id,text:x.text||'',done:!!x.done,doneAt:x.doneAt||'',due:x.due||'',order:x.order||0,project:x.project})});
+    return out;
+  }
+  function lfSplit(){
+    var t=today(),a=lfNorm(),f=LF.tf,pass=function(o){return f==='all'||(f==='business'?o.kind==='biz':o.kind==='life')};
+    var all={carried:[],today:[],more:[],done:[]},cnt={all:0,business:0,life:0};
+    a.forEach(function(o){
+      var planned=o.due&&o.due<=t;
+      if(o.done){if(o.doneAt&&dkey(o.doneAt)===t&&(o.kind==='life'||o.due)){if(pass(o))all.done.push(o)}return}
+      if(planned){cnt.all++;cnt[o.kind==='biz'?'business':'life']++}
+      if(!pass(o))return;
+      if(planned)(o.due<t?all.carried:all.today).push(o);else all.more.push(o);
+    });
+    all.carried.sort(function(a,b){return a.due<b.due?-1:a.due>b.due?1:a.order-b.order});
+    all.today.sort(function(a,b){return a.order-b.order});
+    all.more.sort(function(a,b){return (a.kind===b.kind?0:a.kind==='life'?-1:1)||(a.due&&b.due?(a.due<b.due?-1:1):(a.due?-1:b.due?1:0))||(a.project===b.project?a.order-b.order:(proj(a.project)||{order:0}).order-(proj(b.project)||{order:0}).order)});
+    all.cnt=cnt;return all;
+  }
+  function lfOpenToday(){var t=today(),n=0;state.tasks.forEach(function(x){if(!x.done&&x.due&&x.due<=t)n++});state.items.forEach(function(x){if(x.kind==='todo'&&!x.done&&x.due&&x.due<=t)n++});return n}
+  function lfRow(o,mode){
+    var p=o.kind==='biz'?proj(o.project):null,late=mode!=='done'&&o.due&&o.due<today(),id=esc(o.id),chips='',ra='';
+    chips+='<span class="lf-ar '+(o.kind==='biz'?'b':'l')+'">'+(o.kind==='biz'?'Business':'Life')+'</span>';
+    if(p)chips+='<span class="chip" style="'+pvar(p)+'"><i class="pdot"></i>'+esc(p.name)+'</span>';
+    if(late){var d=Math.round((new Date(today()+'T12:00')-new Date(o.due+'T12:00'))/864e5);chips+='<span class="chip late">Carried · '+d+(d===1?' day':' days')+'</span>'}
+    else if(mode==='more'&&o.due)chips+='<span class="chip">'+(o.due===addDays(today(),1)?'Tomorrow':fmtDue(o.due))+'</span>';
+    var cb=o.kind==='biz'?'<button class="cb" data-act="toggle" data-id="'+id+'" aria-pressed="'+o.done+'" aria-label="'+(o.done?'Mark not done':'Mark done')+'"></button>':'<button class="cb" data-lo="ttick" data-id="'+id+'" aria-pressed="'+o.done+'" aria-label="'+(o.done?'Mark not done':'Mark done')+'"></button>';
+    if(mode==='more')ra='<button type="button" class="lf-go" data-lo="tday" data-k="'+o.kind+'" data-id="'+id+'" data-v="today" aria-label="Move to today">'+ico('plus')+'<span>Today</span></button>';
+    else if(mode!=='done'){
+      if(late)ra+='<button type="button" class="lf-go" data-lo="tday" data-k="'+o.kind+'" data-id="'+id+'" data-v="today" aria-label="Carry to today">'+lfi('arrow')+'<span>Today</span></button>';
+      if(o.kind==='biz')ra+='<button type="button" class="lf-go" data-lo="tday" data-k="biz" data-id="'+id+'" data-v="" aria-label="Take off today">'+lfi('x')+'<span>Not today</span></button>';
+      else ra+='<button type="button" class="lf-go" data-lo="tdel" data-id="'+id+'" aria-label="Delete">'+(LF.conf===o.id?'<span style="display:inline">Delete?</span>':lfi('x'))+'</button>';
+    }
+    return '<li class="it'+(o.done?' done':'')+'">'+cb+'<div style="min-width:0"><div class="it-t" style="cursor:default">'+esc(o.text)+'</div><div class="it-m">'+chips+(ra?'<span class="lf-ra">'+ra+'</span>':'')+'</div></div></li>';
+  }
+  function lfList(a,mode){return '<ul class="list lf-list'+(mode==='done'?' lf-done':'')+'">'+a.map(function(o){return lfRow(o,mode)}).join('')+'</ul>'}
+  function lfLists(){
+    var S=lfSplit(),f=LF.tf,h='',nTop=S.carried.length+S.today.length;
+    h+='<div class="chips" role="group" aria-label="Show">'+[['all','All'],['business','Business'],['life','Life']].map(function(c){return '<button type="button" class="fchip" data-lo="tf" data-v="'+c[0]+'" aria-pressed="'+(f===c[0])+'">'+c[1]+'<span class="n">'+S.cnt[c[0]]+'</span></button>'}).join('')+'</div>';
+    if(S.carried.length){h+='<div class="lf-sech"><span class="label">Carried over</span><span class="chip late">'+S.carried.length+'</span>'+(S.carried.length>1?'<button type="button" class="btn ghost sm" data-lo="carryall">All to today</button>':'')+'</div>'+lfList(S.carried,'today')}
+    if(S.today.length)h+='<div class="lf-sech"><span class="label">Today</span><span class="chip">'+S.today.length+'</span></div>'+lfList(S.today,'today');
+    if(!nTop)h+=empty(S.done.length?'All clear for today':'Nothing planned yet',S.done.length?'Everything planned for today is ticked off.':'Add a to-do above, or pull one in from More to do.');
+    if(S.done.length){h+='<button type="button" class="lf-more" data-lo="done" aria-expanded="'+LF.showDone+'"><span>Done today · '+S.done.length+'</span><span>'+(LF.showDone?'Hide':'Show')+'</span></button>';if(LF.showDone)h+=lfList(S.done,'done')}
+    if(S.more.length){h+='<button type="button" class="lf-more" data-lo="more" aria-expanded="'+LF.more+'"><span>More to do · '+S.more.length+'</span><span>'+(LF.more?'Hide':'Pull in')+'</span></button>';
+      if(LF.more){h+=lfList(S.more.slice(0,40),'more');if(S.more.length>40)h+='<p class="lf-note">Showing 40 of '+S.more.length+'. The rest are in Projects.</p>'}}
+    return h;
+  }
+  function lfAddForm(){
+    var ps=sortedProjects(),proj0=LF.aProj&&proj(LF.aProj)?LF.aProj:(ps[0]?ps[0].id:'');
+    return '<form class="lf-add" data-lform="tadd" autocomplete="off">'+
+      '<div class="lf-add-r"><input class="field" id="td-add" type="text" maxlength="200" placeholder="Add a to-do…" aria-label="Add a to-do" enterkeyhint="done" autocomplete="off" autocapitalize="sentences"><button class="btn amber" type="submit">Add</button></div>'+
+      '<div class="lf-add-o"><div class="chips" role="group" aria-label="Area">'+[['life','Life'],['business','Business']].map(function(c){return '<button type="button" class="fchip" data-lo="area" data-v="'+c[0]+'" aria-pressed="'+(LF.aArea===c[0])+'">'+c[1]+'</button>'}).join('')+'</div>'+
+      '<select class="field" id="td-when" data-lchg="aWhen" style="width:auto" aria-label="When">'+[['today','Today'],['tomorrow','Tomorrow'],['later','Later']].map(function(c){return '<option value="'+c[0]+'"'+(LF.aWhen===c[0]?' selected':'')+'>'+c[1]+'</option>'}).join('')+'</select>'+
+      (LF.aArea==='business'?'<select class="field" id="td-proj" data-lchg="aProj" style="width:auto;max-width:100%" aria-label="Project">'+ps.map(function(p){return '<option value="'+esc(p.id)+'"'+(p.id===proj0?' selected':'')+'>'+esc(p.name)+'</option>'}).join('')+'</select>':'')+
+      '</div></form>';
+  }
+
+  /* habits block on Today */
+  function habitChips(){
+    var hs=activeHabits(),t=today();
+    if(!hs.length)return '<p class="lf-note">No habits yet. <a class="lf-link" href="#habits">Add some</a></p>';
+    return '<div class="lf-hchips">'+hs.map(function(h){var s=hStats(h);
+      return '<button type="button" class="lf-hb'+(LF.pop===h.id+'|'+t?' pop':'')+'" data-lo="htick" data-id="'+esc(h.id)+'" data-d="'+t+'" aria-pressed="'+s.doneToday+'" aria-label="'+esc(h.name)+', '+(s.doneToday?'done today':'not done today')+'"><span class="lf-hi">'+lfi(h.icon)+'</span><span class="lf-hn">'+esc(h.name)+'</span><span class="lf-hs">'+flame(s.streak>0)+s.streak+'</span></button>'}).join('')+'</div>';
+  }
+  function habitPanel(){
+    var hs=activeHabits(),t=today(),done=hs.filter(function(h){return hasH(t,h.id)}).length,pct=hs.length?done/hs.length:0;
+    var body=hs.length?'<div class="lf-hrow">'+ring(pct,'var(--ok)',68,'<b>'+done+'/'+hs.length+'</b>')+'<div><b>'+(done===hs.length?'All done today':done+' of '+hs.length+' done')+'</b><span class="lf-sub">'+(done===hs.length?'Nice one.':'Tap a habit to tick it')+'</span></div></div>':'';
+    return hp('lf-hpan','Habits','<a class="lf-link" href="#habits">Open</a>',body+habitChips(),1);
+  }
+  /* mood entry (used on Today and Mood) */
+  function moodEntry(){
+    var k=today(),m=moodOf(k)||{},v=+m.mood||0,e=+m.energy||0;
+    return '<div><div class="lf-lab"><span class="label">How are you feeling?</span><span class="lf-sub">'+(v?MOODS[v-1][1]:'Not logged')+'</span></div><div class="lf-faces" role="group" aria-label="Mood">'+MOODS.map(function(x){return '<button type="button" class="lf-face'+(LF.pop==='m'+x[0]?' pop':'')+'" style="--mc:'+x[2]+'" data-lo="mood" data-v="'+x[0]+'" aria-pressed="'+(v===x[0])+'" aria-label="'+x[1]+'">'+lfFace(x[0])+'<span>'+x[1]+'</span></button>'}).join('')+'</div></div>'+
+      '<div><div class="lf-lab"><span class="label">Energy (optional)</span><span class="lf-sub">'+(e?e+' of 5':'Not logged')+'</span></div><div class="lf-en" role="group" aria-label="Energy">'+[1,2,3,4,5].map(function(n){return '<button type="button" data-lo="en" data-v="'+n+'" aria-pressed="'+(e===n)+'" aria-label="Energy '+n+'">'+n+'</button>'}).join('')+'</div></div>'+
+      '<form class="lf-form" data-lform="mnote" autocomplete="off"><input class="field" id="md-note" type="text" maxlength="140" placeholder="A line about today" aria-label="Note" value="'+esc(m.note||'')+'"><button class="btn ghost" type="submit">Save</button></form>';
+  }
+  function moodPanel(){return hp('lf-mpan','Mood','<a class="lf-link" href="#mood">Trends</a>','<div class="lf-col">'+moodEntry()+'</div>',2)}
+
+  function viewToday(){
+    lfIndex();
+    var d=new Date(),ds=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}),hs=activeHabits(),t=today(),hd=hs.filter(function(h){return hasH(t,h.id)}).length,n=lfOpenToday();
+    var h='<div class="lf-page"><header class="head rise"><span class="label">'+esc(ds)+'</span><h1>Today</h1><p class="lf-lede"><b>'+n+'</b> to-do'+(n===1?'':'s')+' planned'+(hs.length?', <b>'+hd+'/'+hs.length+'</b> habits':'')+(moodOf(t)&&+moodOf(t).mood?', mood logged':', mood not logged')+'.</p></header>';
+    h+='<div class="lf-pair"><div class="lf-col"><section class="hp rise lf-todo" style="--i:0"><div class="hp-h"><span class="hp-t"><i></i>To-dos</span><span class="lf-sub">Business and Life</span></div>'+lfAddForm()+'<div class="lf-col" id="lf-lists">'+lfLists()+'</div></section></div><div class="lf-col">'+habitPanel()+moodPanel()+'</div></div></div>';
+    return h;
+  }
+  function lfRepaint(){var el=$('#lf-lists');if(el)el.innerHTML=lfLists()}
+
+  function viewHabits(){
+    lfIndex();
+    var hs=activeHabits(),ar=archivedHabits(),w0=addDays(wkStart(today()),7*LF.wk),t=today();
+    var rng=LF.wk===0?'This week':new Date(w0+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' to '+new Date(addDays(w0,6)+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    var h='<div class="lf-page"><header class="head rise"><span class="label">Life</span><h1>Habits</h1><p class="lf-lede">Tick each day. A streak counts days in a row for daily habits and weeks that hit the target for the rest. Weeks run Monday to Sunday.</p></header>';
+    h+='<div class="lf-bar rise"><div class="lf-wk"><button type="button" data-lo="hwk" data-v="-1" aria-label="Previous week"'+(LF.wk<=-52?' disabled':'')+'>&lsaquo;</button><b>'+rng+'</b><button type="button" data-lo="hwk" data-v="1" aria-label="Next week"'+(LF.wk>=0?' disabled':'')+'>&rsaquo;</button></div><button type="button" class="btn" data-lo="hnew"'+(!state.db||!state.canWrite?' disabled':'')+'>'+ico('plus')+' New habit</button></div>';
+    if(LF.newH)h+=habitForm(null);
+    if(!hs.length&&!LF.newH)h+=empty('No habits yet','Add one with New habit. Gym, water, steps and reading are the usual start.');
+    h+='<div class="lf-hcards">'+hs.map(function(x,i){return habitCard(x,w0,t,i,hs.length)}).join('')+'</div>';
+    if(ar.length)h+='<section class="rise"><div class="lf-sech"><span class="label">Archived</span></div><ul class="lf-arch">'+ar.map(function(x){return '<li><span class="lf-hi">'+lfi(x.icon)+'</span><span>'+esc(x.name)+'</span><button type="button" class="btn ghost sm" data-lo="hrest" data-id="'+esc(x.id)+'">Restore</button></li>'}).join('')+'</ul></section>';
+    return h+'</div>';
+  }
+  function habitCard(x,w0,t,i,n){
+    var s=hStats(x),id=esc(x.id),days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],cnt=weekCount(w0,x.id),pct=Math.min(100,cnt/s.target*100);
+    var wk=days.map(function(dn,j){var k=addDays(w0,j),on=hasH(k,x.id),fut=k>t;
+      return '<button type="button" class="lf-day'+(k===t?' now':'')+(LF.pop===x.id+'|'+k?' pop':'')+'" data-lo="htick" data-id="'+id+'" data-d="'+k+'" aria-pressed="'+on+'" aria-label="'+esc(x.name)+', '+dn+' '+new Date(k+'T12:00').getDate()+(on?', done':'')+'"'+(fut?' disabled':'')+'><span>'+dn+'</span><i>'+CHECK+'</i></button>'}).join('');
+    var h='<article class="lf-hc rise" style="--i:'+i+'"><div class="lf-hc-h"><span class="lf-hi">'+lfi(x.icon)+'</span><div class="lf-hc-t"><b>'+esc(x.name)+'</b><span class="lf-sub">Target '+s.target+(s.target===7?' (every day)':' days a week')+'</span></div><span class="lf-streak'+(s.streak?' on':'')+'" title="Streak">'+flame(s.streak>0)+s.streak+' '+s.unit+'</span></div>'+
+      '<div class="lf-week">'+wk+'</div><div class="lf-wkrow">'+bar(pct,cnt>=s.target?'var(--ok)':'var(--cyan)')+'<span class="lf-sub">'+cnt+'/'+s.target+(LF.wk===0?' this week':'')+'</span></div>'+
+      '<div class="lf-acts"><button type="button" class="btn ghost sm" data-lo="hedit" data-id="'+id+'" aria-expanded="'+(LF.edit===x.id)+'">'+(LF.edit===x.id?'Close':'Edit')+'</button></div>';
+    if(LF.edit===x.id)h+=habitForm(x,i,n);
+    return h+'</article>';
+  }
+  function habitForm(x,i,n){
+    var id=x?esc(x.id):'',p=LF.pick;
+    return '<form class="lf-edit" data-lform="hsave" data-id="'+id+'" autocomplete="off"><label><span class="label">Name</span><input class="field" id="h-name" type="text" maxlength="40" value="'+esc(x?x.name:'')+'" placeholder="Habit name"></label>'+
+      '<div><span class="label">Icon</span><div class="lf-icons" id="h-ico" role="group" aria-label="Icon">'+LFK.map(function(k){return '<button type="button" data-lo="hico" data-v="'+k+'" aria-pressed="'+(p.ico===k)+'" aria-label="'+k+'">'+lfi(k)+'</button>'}).join('')+'</div></div>'+
+      '<div><span class="label">Target days per week</span><div class="lf-tg" id="h-tg" role="group" aria-label="Target days per week">'+[1,2,3,4,5,6,7].map(function(n){return '<button type="button" data-lo="htg" data-v="'+n+'" aria-pressed="'+(p.t===n)+'">'+n+'</button>'}).join('')+'</div></div>'+
+      '<div class="lf-acts"><button type="submit" class="btn amber">'+(x?'Save':'Add habit')+'</button>'+
+      (x?'<button type="button" class="btn ghost" data-lo="hmove" data-id="'+id+'" data-v="-1" aria-label="Move up"'+(i===0?' disabled':'')+'>'+lfi('up')+' Up</button><button type="button" class="btn ghost" data-lo="hmove" data-id="'+id+'" data-v="1" aria-label="Move down"'+(i===n-1?' disabled':'')+'>'+lfi('down')+' Down</button><button type="button" class="btn ghost" data-lo="harch" data-id="'+id+'">Archive</button>':'<button type="button" class="btn ghost" data-lo="hnew">Cancel</button>')+'</div></form>';
+  }
+
+  function viewMood(){
+    var t=today(),N=LF.hist,days=[],i;
+    for(i=N-1;i>=0;i--)days.push(addDays(t,-i));
+    var rows=days.map(function(k){return moodOf(k)}),ms=rows.filter(function(m){return m&&+m.mood}),es=rows.filter(function(m){return m&&+m.energy});
+    var avg=function(a,f){return a.length?(a.reduce(function(s,m){return s+(+m[f])},0)/a.length).toFixed(1):'–'};
+    var W=300,Hh=84,base=70,sw=W/N,bw=Math.min(28,sw*.62),svg='<svg class="lf-trend" viewBox="0 0 '+W+' '+(Hh+8)+'" role="img" aria-label="Mood over the last '+N+' days"><line class="ax" x1="0" x2="'+W+'" y1="'+base+'" y2="'+base+'"/>';
+    days.forEach(function(k,j){var m=moodOf(k),x=j*sw+sw/2,mv=m&&+m.mood,en=m&&+m.energy;
+      if(mv){var hh=mv/5*(base-6);svg+='<rect class="bar-m" x="'+(x-bw/2).toFixed(1)+'" y="'+(base-hh).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+hh.toFixed(1)+'" rx="3" fill="'+MOODS[mv-1][2]+'" style="animation-delay:'+(j*14)+'ms"/>'}
+      else svg+='<rect x="'+(x-bw/2).toFixed(1)+'" y="'+(base-3)+'" width="'+bw.toFixed(1)+'" height="3" rx="1.5" fill="var(--line2)"/>';
+      if(en)svg+='<circle class="en" cx="'+x.toFixed(1)+'" cy="'+(base-en/5*(base-6)).toFixed(1)+'" r="'+(N>7?2.4:3.2)+'"/>';
+      var lab=N===7?new Date(k+'T12:00').toLocaleDateString('en-GB',{weekday:'narrow'}):(j%7===0||j===N-1?new Date(k+'T12:00').getDate()+'/'+(new Date(k+'T12:00').getMonth()+1):'');
+      if(lab)svg+='<text x="'+x.toFixed(1)+'" y="'+(Hh+4)+'" text-anchor="middle">'+lab+'</text>';
+    });
+    svg+='</svg>';
+    var notes=state.mood.filter(function(m){return m.note&&+m.mood}).sort(function(a,b){return a.id<b.id?1:-1}).slice(0,10);
+    var h='<div class="lf-page"><header class="head rise"><span class="label">Life</span><h1>Mood</h1><p class="lf-lede">One tap a day, with optional energy and a line of note. The bars are mood and the dots are energy.</p></header>';
+    h+='<div class="lf-pair2"><section class="hp rise" style="--i:0"><div class="hp-h"><span class="hp-t"><i></i>Today</span></div><div class="lf-col">'+moodEntry()+'</div></section>';
+    h+='<section class="hp rise" style="--i:1"><div class="hp-h"><span class="hp-t"><i></i>Trend</span><div class="chips" role="group" aria-label="Range">'+[7,30].map(function(n){return '<button type="button" class="fchip" data-lo="hist" data-v="'+n+'" aria-pressed="'+(N===n)+'">'+n+' days</button>'}).join('')+'</div></div>'+
+      (ms.length?svg+'<div class="lf-stats"><div><b>'+avg(ms,'mood')+'</b><span class="lf-sub">Avg mood</span></div><div><b>'+avg(es,'energy')+'</b><span class="lf-sub">Avg energy</span></div><div><b>'+ms.length+'/'+N+'</b><span class="lf-sub">Days logged</span></div></div>':empty('No mood logged yet','Tap a face to start. The trend builds up from there.'))+'</section></div>';
+    if(notes.length)h+='<section class="hp rise" style="--i:2"><div class="hp-h"><span class="hp-t"><i></i>Notes</span></div><ul class="lf-notes">'+notes.map(function(m){var v=Math.max(1,Math.min(5,+m.mood));return '<li style="--mc:'+MOODS[v-1][2]+'">'+lfFace(v)+'<div><small>'+new Date(m.id+'T12:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+'</small><span>'+esc(m.note)+'</span></div></li>'}).join('')+'</ul></section>';
+    return h+'</div>';
+  }
+
+  /* writes: update the in-memory copy first so quick taps never read stale state, then save */
+  function lfPop(x){LF.pop=x;clearTimeout(lfPop.t);lfPop.t=setTimeout(function(){LF.pop=null},700)}
+  function tickHabit(hid,k,btn){
+    var cur=null;state.habitlog.forEach(function(l){if(l.id===k)cur=l});
+    var set=(cur&&cur.done||[]).slice(),ix=set.indexOf(hid),on=ix<0;
+    if(on)set.push(hid);else set.splice(ix,1);
+    if(cur)cur.done=set;else state.habitlog.push({id:k,d:k,done:set});
+    lfPop(hid+'|'+k);
+    if(on&&btn){var r=btn.getBoundingClientRect(),hs=activeHabits(),all=hs.length&&k===today()&&hs.every(function(h){return set.indexOf(h.id)>=0});confetti(r.left+r.width/2,r.top+r.height/2,all?36:10)}
+    render(true);
+    run(function(){return state.db.doc('habitlog/'+k).set({d:k,done:set})}).catch(function(){});
+  }
+  function saveMood(patch,popKey){
+    var k=today(),cur=moodOf(k),o={d:k,mood:cur?+cur.mood||0:0,energy:cur?+cur.energy||0:0,note:cur?cur.note||'':'',at:new Date().toISOString()};
+    Object.keys(patch).forEach(function(x){o[x]=patch[x]});
+    if(cur){cur.mood=o.mood;cur.energy=o.energy;cur.note=o.note}else state.mood.push({id:k,d:k,mood:o.mood,energy:o.energy,note:o.note,at:o.at});
+    if(popKey)lfPop(popKey);
+    run(function(){return state.db.doc('mood/'+k).set(o)}).catch(function(){});
+    return o;
+  }
+  function lfDue(w){return w==='tomorrow'?addDays(today(),1):w==='later'?'':today()}
+  function lfTaskDoc(kind,id){return state.db.doc((kind==='biz'?'items/':'tasks/')+id)}
+  function lfSeed(s){
+    if(LF.seeded||!state.db||!state.canWrite||s.docs.length||(s.metadata&&s.metadata.fromCache))return;LF.seeded=true;
+    HDEF.forEach(function(d,i){state.db.doc('habits/'+d[0]).set({name:d[1],icon:d[2],target:7,order:i+1,archived:false,created:new Date().toISOString()}).catch(function(){})});
+  }
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('[data-lo]');if(!b)return;
+    var a=b.dataset.lo,id=b.dataset.id,v=b.dataset.v,tv;
+    if(a==='tf'){LF.tf=v;lfSave();render(true)}
+    else if(a==='area'){var tx=($('#td-add')||{}).value||'';LF.aArea=v;lfSave();render(true);var ti=$('#td-add');if(ti)ti.value=tx}
+    else if(a==='ttick'){var tk=state.tasks.filter(function(x){return x.id===id})[0];if(!tk)return;var nd=!tk.done;if(nd){var rc=b.getBoundingClientRect();confetti(rc.left+12,rc.top+12,10)}
+      tk.done=nd;tk.doneAt=nd?new Date().toISOString():'';render(true);run(function(){return state.db.doc('tasks/'+id).update({done:nd,doneAt:tk.doneAt})}).catch(function(){})}
+    else if(a==='tday'){var due=v==='today'?today():'',kd=b.dataset.k;run(function(){return lfTaskDoc(kd,id).update({due:due})}).catch(function(){})}
+    else if(a==='tdel'){if(LF.conf!==id){LF.conf=id;render(true);setTimeout(function(){if(LF.conf===id){LF.conf=null;render(false)}},3500);return}LF.conf=null;run(function(){return state.db.doc('tasks/'+id).delete()}).catch(function(){})}
+    else if(a==='carryall'){var t0=today();run(function(){var ps=[];state.tasks.forEach(function(x){if(!x.done&&x.due&&x.due<t0&&LF.tf!=='business')ps.push(state.db.doc('tasks/'+x.id).update({due:t0}))});
+      state.items.forEach(function(x){if(x.kind==='todo'&&!x.done&&x.due&&x.due<t0&&LF.tf!=='life')ps.push(state.db.doc('items/'+x.id).update({due:t0}))});return Promise.all(ps)}).then(function(){toast('Carried over to today.')},function(){})}
+    else if(a==='more'){LF.more=!LF.more;render(true)}
+    else if(a==='done'){LF.showDone=!LF.showDone;render(true)}
+    else if(a==='htick'){tickHabit(id,b.dataset.d,b)}
+    else if(a==='hwk'){LF.wk=Math.max(-52,Math.min(0,LF.wk+(+v)));render(true)}
+    else if(a==='hnew'){LF.newH=!LF.newH;LF.edit=null;LF.pick={ico:'star',t:7};render(true);if(LF.newH){var hn=$('#h-name');if(hn)hn.focus()}}
+    else if(a==='hedit'){var hh=state.habits.filter(function(x){return x.id===id})[0];if(LF.edit===id){LF.edit=null}else{LF.edit=id;LF.newH=false;LF.pick={ico:hh&&hh.icon||'star',t:Math.max(1,Math.min(7,+(hh&&hh.target)||7))}}render(true)}
+    else if(a==='hico'||a==='htg'){if(a==='hico')LF.pick.ico=v;else LF.pick.t=+v;[].forEach.call(b.parentNode.children,function(c){c.setAttribute('aria-pressed',String(c===b))})}
+    else if(a==='hmove'){var hs=activeHabits(),ix=-1;hs.forEach(function(x,j){if(x.id===id)ix=j});var j2=ix+(+v);if(ix<0||j2<0||j2>=hs.length)return;var A=hs[ix],B=hs[j2],oa=A.order||0,ob=B.order||0;if(oa===ob){oa=ix+1;ob=j2+1}
+      A.order=ob;B.order=oa;render(true);run(function(){return Promise.all([state.db.doc('habits/'+A.id).update({order:ob}),state.db.doc('habits/'+B.id).update({order:oa})])}).catch(function(){})}
+    else if(a==='harch'){LF.edit=null;run(function(){return state.db.doc('habits/'+id).update({archived:true})}).then(function(){toast('Habit archived. Its history is kept.')},function(){})}
+    else if(a==='hrest'){run(function(){return state.db.doc('habits/'+id).update({archived:false,order:Date.now()})}).catch(function(){})}
+    else if(a==='mood'){var mv=+v;saveMood({mood:mv},'m'+mv);render(true);if(!moodOf(today()).note){/* keep keyboard closed */}}
+    else if(a==='en'){saveMood({energy:+v});render(true)}
+    else if(a==='hist'){LF.hist=+v;lfSave();render(true)}
+  });
+  document.addEventListener('change',function(e){var el=e.target.closest&&e.target.closest('[data-lchg]');if(el)LF[el.dataset.lchg]=el.value});
+  document.addEventListener('submit',function(e){
+    var f=e.target.closest&&e.target.closest('[data-lform]');if(!f)return;e.preventDefault();var k=f.dataset.lform;
+    if(k==='tadd'){var inp=$('#td-add'),text=inp.value.trim();if(!text){inp.focus();return}
+      var wh=($('#td-when')||{}).value||LF.aWhen,due=lfDue(wh),pid=($('#td-proj')||{}).value||LF.aProj||(sortedProjects()[0]||{}).id,now=new Date().toISOString();
+      if(LF.aArea==='business'&&!pid){toast('Add a project first.');return}
+      inp.value='';inp.focus();
+      run(function(){return LF.aArea==='business'?state.db.collection('items').add({project:pid,kind:'todo',text:text,detail:'',group:'',done:false,doneAt:'',waiting:false,due:due,created:now,order:Date.now()}):state.db.collection('tasks').add({text:text,area:'life',due:due,done:false,doneAt:'',created:now,order:Date.now()})})
+      .then(function(){if(wh!=='today')toast(wh==='tomorrow'?'Added for tomorrow.':'Added to More to do.')},function(){inp.value=text})}
+    else if(k==='mnote'){var note=$('#md-note').value.trim().slice(0,140);saveMood({note:note});toast('Saved.');render(true)}
+    else if(k==='hsave'){var id=f.dataset.id,name=$('#h-name').value.trim();if(!name){$('#h-name').focus();return}
+      if(id){var x=state.habits.filter(function(h){return h.id===id})[0];if(x){x.name=name;x.icon=LF.pick.ico;x.target=LF.pick.t}LF.edit=null;render(true);run(function(){return state.db.doc('habits/'+id).update({name:name,icon:LF.pick.ico,target:LF.pick.t})}).catch(function(){})}
+      else{LF.newH=false;run(function(){return state.db.collection('habits').add({name:name,icon:LF.pick.ico,target:LF.pick.t,order:Date.now(),archived:false,created:new Date().toISOString()})}).then(function(){toast('Habit added.')},function(){LF.newH=true;render(true)});render(true)}}
+  });
+
   /* ---------- live data ---------- */
   function boot(){
     render(true);
     var timer=setTimeout(function(){state.slow=true;render(false)},10000),fresh={};
     function sub(name){
       state.db.collection(name).onSnapshot(function(s){
-        state[name]=s.docs.map(function(d){var o=JSON.parse(JSON.stringify(d.data()||{}));o.id=d.id;return o});vxWatch(name);
+        state[name]=s.docs.map(function(d){var o=JSON.parse(JSON.stringify(d.data()||{}));o.id=d.id;return o});vxWatch(name);if(name==='habits')lfSeed(s);
         if(!s.metadata||!s.metadata.fromCache){fresh[name]=true;if(fresh.projects&&fresh.items&&fresh.log){clearTimeout(timer);state.slow=false;if(!state.loadedAll){state.loadedAll=true;intro();if(window.BH_greet)setTimeout(window.BH_greet,700)}}}
         schedule();
       },function(err){state.err=err&&err.code;clearTimeout(timer);schedule()});
     }
-    sub('projects');sub('items');sub('log');sub('budgets');sub('nights');
+    sub('projects');sub('items');sub('log');sub('budgets');sub('nights');sub('habits');sub('habitlog');sub('mood');sub('tasks');
     state.db.doc('settings/night').onSnapshot(function(sn){state.night=sn.exists?JSON.parse(JSON.stringify(sn.data()||{})):{};schedule()},function(){});
     state.db.doc('settings/hub').onSnapshot(function(sn){state.settings=sn.exists?JSON.parse(JSON.stringify(sn.data()||{})):null;schedule()},function(){});
   }
