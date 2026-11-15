@@ -2607,7 +2607,7 @@ const AI0=allItems;allItems=function(){const it=AI0();it.forEach(x=>{if(x.g==='L
 const TOWNS=[['Folkestone',51.081,1.166],['Canterbury',51.28,1.079],['Faversham',51.316,0.891],['Ashford',51.146,0.875],['Maidstone',51.272,0.522]];
 const km=(a,b,c,d)=>{const R=Math.PI/180,x=(d-b)*R*Math.cos((a+c)/2*R),y=(c-a)*R;return 6371*Math.hypot(x,y)};
 let HERE=null;try{HERE=JSON.parse(localStorage.getItem('hub3.here')||'null')}catch(e){}
-let LOCMSG='';const wxHead=()=>{const el=$('.p-wx .ph .r');if(el)el.innerHTML=HERE?'Here + Kent':`<button type="button" class="locbtn" id="locBtn" title="Use my location for weather">${esc(LOCMSG||'Use my location')}</button>`};
+let LOCMSG='';const wxHead=()=>{const el=$('.p-wx .ph .r');if(el)el.innerHTML=HERE?'Your location':`<button type="button" class="locbtn" id="locBtn" title="Use my location for weather">${esc(LOCMSG||'Use my location')}</button>`};
 const LOCERR={1:'Location blocked',2:'Location unavailable',3:'Location timed out'};
 let locLate=false;
 function locate(){return new Promise(res=>{if(!navigator.geolocation){LOCMSG='No location on this device';res(HERE);return}
@@ -2625,9 +2625,10 @@ document.addEventListener('click',e=>{if(!e.target.closest('#locBtn'))return;
   $('#locBtn').textContent='Finding you…';weather()});
 const wIc=c=>c<=1?'sun':c===2?'part':c<=48?'cloud':'rain';
 async function weather(){try{
-  const h=await locate();let L=TOWNS.slice();
-  if(h){const nr=TOWNS.map(t=>[t,km(h.la,h.lo,t[1],t[2])]).sort((a,b)=>a[1]-b[1])[0];
-    L=[['Here',h.la,h.lo,nr[1]<12?'Near '+nr[0][0]:'Current location']].concat(TOWNS.filter(t=>!(nr[1]<4&&t===nr[0])))}
+  const h=await locate();
+  if(!h){SITES.length=0;WARN.length=0;renderWx();wxHead();$('#wxSites').innerHTML=`<div class="empty">${LOCMSG?esc(LOCMSG)+'. ':''}Allow location to see the weather where you are.</div>`;return}
+  const nr=TOWNS.map(t=>[t,km(h.la,h.lo,t[1],t[2])]).sort((a,b)=>a[1]-b[1])[0];
+  const L=[[nr[1]<12?nr[0][0]:'your location',h.la,h.lo,'Your location']];
   const u='https://api.open-meteo.com/v1/forecast?latitude='+L.map(t=>t[1]).join(',')+'&longitude='+L.map(t=>t[2]).join(',')+'&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m&hourly=precipitation_probability&daily=sunrise,sunset&wind_speed_unit=mph&timezone=auto&forecast_days=2';
   const r=await fetch(u);if(!r.ok)throw new Error(r.status);let j=await r.json();if(!Array.isArray(j))j=[j];
   SITES.length=0;WARN.length=0;
@@ -2641,7 +2642,7 @@ async function weather(){try{
 }catch(e){wxHead();console.warn('Weather unavailable',e);if(!SITES.length)$('#wxSites').innerHTML='<div class="empty">Weather is unavailable right now.</div>'}}
 const wxTop=()=>SITES.slice().sort((a,b)=>Math.max(...b.r)-Math.max(...a.r))[0];
 wxSay=function(){const n=nowMin();if(!SITES.length){say('Weather is not loaded yet.');return}const s=SITES[0];
-  say(`${WARN.length?WARN.map(w=>w[0]).join('. ')+'.':'No rain or wind warnings.'} ${s.n} is ${s.t} degrees, wind ${s.w} mph. ${n>SUN.r&&n<SUN.s?dur(SUN.s-n)+' of daylight left.':'Sunset was at '+fmt(SUN.s)+'.'}`)};
+  say(`${WARN.length?WARN.map(w=>w[0]).join('. ')+'.':'No rain or wind warnings.'} ${s.n.charAt(0).toUpperCase()+s.n.slice(1)} is ${s.t} degrees, wind ${s.w} mph. ${n>SUN.r&&n<SUN.s?dur(SUN.s-n)+' of daylight left.':'Sunset was at '+fmt(SUN.s)+'.'}`)};
 
 /* ---------- assistant summaries from real data ---------- */
 health=function(){let s=100;const r=[],add=(n,t,sel)=>{s-=n;r.push({n,t,sel})};const nN=S.needs.length;
@@ -2656,7 +2657,7 @@ suBuild=function(){const f=S.tasks.find(t=>!t.done),ov=BUD.filter(b=>b.b&&b.s>b.
  {sel:'.corewrap',k:'Systems check',t:`${GREET} Suit integrity is ${HS.s}%. ${HS.r.length?`${HS.r.length} things to look at.`:'Everything looks good.'}`},
  {sel:'.p-pri',k:'Priorities',t:f?`${left()} of ${S.tasks.length} priorities open. Start with ${f.t}.`:S.tasks.length?'Every priority is done. Strong start.':'No priorities set for today. Move a to-do across.'},
  {sel:'.p-needs',k:'Needs you',t:S.needs.length?`${S.needs.length} waiting on you. Newest: ${S.needs[0].t}.`:'Nobody is waiting on you.'},
- {sel:'.p-wx',k:'Weather',t:WARN.length?WARN[0][0]+'. '+WARN[0][1]:SITES.length?`No warnings. ${SITES[0].n} is ${SITES[0].t} degrees.`:'Weather is not loaded yet.'},
+ {sel:'.p-wx',k:'Weather',t:WARN.length?WARN[0][0]+'. '+WARN[0][1]:SITES.length?`No warnings. ${SITES[0].n.charAt(0).toUpperCase()+SITES[0].n.slice(1)} is ${SITES[0].t} degrees.`:'Weather is not loaded yet.'},
  {sel:'.p-pipe',k:'Pipeline',t:Q.length?`${money(qSum0(0)+qSum0(1)+qSum0(2))} in play.${hot.length?` Chase ${hot.map(h=>h.c).join(' and ')}.`:' Nothing needs chasing.'}`:'No quotes in the pipeline yet. Type quote, the client, then the amount.'},
  {sel:'.p-budget',k:'Budgets',t:ov.length?`${ov.map(bName).join(' and ')} over the limit.`:BUD.length?'All budgets within their limits.':'No budgets tracked yet.'},
  {sel:'.p-night',k:'Night Shift',t:N?`Last night, ${N.built&&N.built.length||0} things built. ${S.armed?'Armed for tonight.':'On standby tonight.'}`:`Night Shift is ${S.armed?'armed':'on standby'}.`},
