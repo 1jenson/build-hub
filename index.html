@@ -2607,9 +2607,22 @@ const AI0=allItems;allItems=function(){const it=AI0();it.forEach(x=>{if(x.g==='L
 const TOWNS=[['Folkestone',51.081,1.166],['Canterbury',51.28,1.079],['Faversham',51.316,0.891],['Ashford',51.146,0.875],['Maidstone',51.272,0.522]];
 const km=(a,b,c,d)=>{const R=Math.PI/180,x=(d-b)*R*Math.cos((a+c)/2*R),y=(c-a)*R;return 6371*Math.hypot(x,y)};
 let HERE=null;try{HERE=JSON.parse(localStorage.getItem('hub3.here')||'null')}catch(e){}
-function locate(){return new Promise(res=>{if(!navigator.geolocation){res(HERE);return}
-  navigator.geolocation.getCurrentPosition(p=>{HERE={la:+p.coords.latitude.toFixed(3),lo:+p.coords.longitude.toFixed(3)};try{localStorage.setItem('hub3.here',JSON.stringify(HERE))}catch(e){}res(HERE)},
-   e=>{if(e&&e.code===1){HERE=null;try{localStorage.removeItem('hub3.here')}catch(x){}}res(HERE)},{enableHighAccuracy:false,timeout:9000,maximumAge:600000})})}
+let LOCMSG='';const wxHead=()=>{const el=$('.p-wx .ph .r');if(el)el.innerHTML=HERE?'Here + Kent':`<button type="button" class="locbtn" id="locBtn" title="Use my location for weather">${esc(LOCMSG||'Use my location')}</button>`};
+const LOCERR={1:'Location blocked',2:'Location unavailable',3:'Location timed out'};
+let locLate=false;
+function locate(){return new Promise(res=>{if(!navigator.geolocation){LOCMSG='No location on this device';res(HERE);return}
+  let done=false;const fin=()=>{if(!done){done=true;res(HERE)}};
+  const t=setTimeout(()=>{locLate=true;fin()},20000);
+  navigator.geolocation.getCurrentPosition(p=>{clearTimeout(t);const was=HERE&&HERE.la+','+HERE.lo;HERE={la:+p.coords.latitude.toFixed(3),lo:+p.coords.longitude.toFixed(3)};LOCMSG='';
+     try{localStorage.setItem('hub3.here',JSON.stringify(HERE))}catch(e){}
+     if(done&&(HERE.la+','+HERE.lo)!==was){locLate=false;weather()}fin()},
+   e=>{clearTimeout(t);LOCMSG=(e&&LOCERR[e.code])||'Location unavailable';if(e&&e.code===1){HERE=null;try{localStorage.removeItem('hub3.here')}catch(x){}}
+     console.warn('Location:',e&&e.code,e&&e.message);fin()},{enableHighAccuracy:false,timeout:30000,maximumAge:600000})})}
+{const st=document.createElement('style');st.textContent='.locbtn{background:none;border:1px solid rgba(var(--ar),.45);color:var(--a);font:inherit;letter-spacing:inherit;text-transform:inherit;padding:3px 7px;cursor:pointer}.locbtn:hover,.locbtn:focus-visible{border-color:var(--a)}';document.head.appendChild(st)}
+document.addEventListener('click',e=>{if(!e.target.closest('#locBtn'))return;
+  if(LOCMSG==='Location blocked'){window.BH_toast&&BH_toast('Location is blocked for this site. Click the icon at the left of the address bar and allow Location, then tap here again.')}
+  else if(LOCMSG==='Location unavailable'){window.BH_toast&&BH_toast('Your device could not find a location. On a Mac, turn on Location Services for Chrome in System Settings > Privacy & Security.')}
+  $('#locBtn').textContent='Finding you…';weather()});
 const wIc=c=>c<=1?'sun':c===2?'part':c<=48?'cloud':'rain';
 async function weather(){try{
   const h=await locate();let L=TOWNS.slice();
@@ -2624,8 +2637,8 @@ async function weather(){try{
     const mx=Math.max(...x.r);if(mx>=60){const at=x.r.indexOf(mx),hh=(now.getHours()+at)%24;WARN.push([`Rain likely at ${x.n}, ${mx}% around ${hh===0?'midnight':hh<12?hh+'am':hh===12?'noon':(hh-12)+'pm'}`,'Plan outside work around it.'])}
     if(x.g>=30)WARN.push([`Gusts up to ${x.g} mph at ${x.n}`,'Take care with ladders and anything loose outside.']);
     if(k===0&&d.daily&&d.daily.sunrise){const tm=s=>{const z=String(s).split('T')[1]||'0:0';const [a,b]=z.split(':');return +a*60+ +b};SUN.r=tm(d.daily.sunrise[0]);SUN.s=tm(d.daily.sunset[0])}});
-  WARN.splice(3);renderWx();sunTick();buildEV();tlRender();
-}catch(e){console.warn('Weather unavailable',e);if(!SITES.length)$('#wxSites').innerHTML='<div class="empty">Weather is unavailable right now.</div>'}}
+  WARN.splice(3);renderWx();wxHead();sunTick();buildEV();tlRender();
+}catch(e){wxHead();console.warn('Weather unavailable',e);if(!SITES.length)$('#wxSites').innerHTML='<div class="empty">Weather is unavailable right now.</div>'}}
 const wxTop=()=>SITES.slice().sort((a,b)=>Math.max(...b.r)-Math.max(...a.r))[0];
 wxSay=function(){const n=nowMin();if(!SITES.length){say('Weather is not loaded yet.');return}const s=SITES[0];
   say(`${WARN.length?WARN.map(w=>w[0]).join('. ')+'.':'No rain or wind warnings.'} ${s.n} is ${s.t} degrees, wind ${s.w} mph. ${n>SUN.r&&n<SUN.s?dur(SUN.s-n)+' of daylight left.':'Sunset was at '+fmt(SUN.s)+'.'}`)};
