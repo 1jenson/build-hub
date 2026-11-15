@@ -1,5 +1,5 @@
 // Build Hub service worker: network first, cached copy when offline.
-var C = 'bh-202611142042';
+var C = 'bh-202611150930';
 var CDN = /^https:\/\/(cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)\//;
 self.addEventListener('install', function (e) { self.skipWaiting(); e.waitUntil(caches.open(C).then(function (c) { return c.addAll(['./', 'icon-192.png']); })); });
 self.addEventListener('activate', function (e) { e.waitUntil(caches.keys().then(function (k) { return Promise.all(k.filter(function (n) { return n !== C; }).map(function (n) { return caches.delete(n); })); }).then(function () { return self.clients.claim(); })); });
@@ -11,7 +11,7 @@ self.addEventListener('fetch', function (e) {
 });
 self.addEventListener('push', function (e) {
   var d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'Command Centre', { body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag || 'bh', data: { url: d.url || './' } }));
+  e.waitUntil(self.registration.showNotification(d.title || 'JARVIS', { body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag || 'bh', data: { url: d.url || './' } }));
 });
 self.addEventListener('notificationclick', function (e) {
   e.notification.close();

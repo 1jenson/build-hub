@@ -1,8 +1,8 @@
 {
-  "name": "Build Hub",
-  "short_name": "Build Hub",
+  "name": "JARVIS",
+  "short_name": "JARVIS",
   "id": "./",
-  "description": "Jenson's command centre for every project.",
+  "description": "Jenson's assistant for every project.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
