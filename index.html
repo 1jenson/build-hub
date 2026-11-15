@@ -2603,16 +2603,24 @@ const openLink=l=>{if(l&&l.url){window.open(l.url,'_blank','noopener');say(`Open
 $('#lgrid').onclick=e=>{const b=e.target.closest('.lk');if(b)openLink(S.links[+b.dataset.l])};
 const AI0=allItems;allItems=function(){const it=AI0();it.forEach(x=>{if(x.g==='Links'){const l=S.links.find(l=>x.t&&(x.t===l[0]||String(x.t).includes(l[0])));if(l)x.run=()=>openLink(l)}});return it};
 
-/* ---------- weather: Open-Meteo, fixed Kent towns, no key ---------- */
+/* ---------- weather: Open-Meteo (no key); your current location first, then fixed Kent towns ---------- */
 const TOWNS=[['Folkestone',51.081,1.166],['Canterbury',51.28,1.079],['Faversham',51.316,0.891],['Ashford',51.146,0.875],['Maidstone',51.272,0.522]];
+const km=(a,b,c,d)=>{const R=Math.PI/180,x=(d-b)*R*Math.cos((a+c)/2*R),y=(c-a)*R;return 6371*Math.hypot(x,y)};
+let HERE=null;try{HERE=JSON.parse(localStorage.getItem('hub3.here')||'null')}catch(e){}
+function locate(){return new Promise(res=>{if(!navigator.geolocation){res(HERE);return}
+  navigator.geolocation.getCurrentPosition(p=>{HERE={la:+p.coords.latitude.toFixed(3),lo:+p.coords.longitude.toFixed(3)};try{localStorage.setItem('hub3.here',JSON.stringify(HERE))}catch(e){}res(HERE)},
+   e=>{if(e&&e.code===1){HERE=null;try{localStorage.removeItem('hub3.here')}catch(x){}}res(HERE)},{enableHighAccuracy:false,timeout:9000,maximumAge:600000})})}
 const wIc=c=>c<=1?'sun':c===2?'part':c<=48?'cloud':'rain';
 async function weather(){try{
-  const u='https://api.open-meteo.com/v1/forecast?latitude='+TOWNS.map(t=>t[1]).join(',')+'&longitude='+TOWNS.map(t=>t[2]).join(',')+'&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m&hourly=precipitation_probability&daily=sunrise,sunset&wind_speed_unit=mph&timezone=Europe%2FLondon&forecast_days=2';
+  const h=await locate();let L=TOWNS.slice();
+  if(h){const nr=TOWNS.map(t=>[t,km(h.la,h.lo,t[1],t[2])]).sort((a,b)=>a[1]-b[1])[0];
+    L=[['Here',h.la,h.lo,nr[1]<12?'Near '+nr[0][0]:'Current location']].concat(TOWNS.filter(t=>!(nr[1]<4&&t===nr[0])))}
+  const u='https://api.open-meteo.com/v1/forecast?latitude='+L.map(t=>t[1]).join(',')+'&longitude='+L.map(t=>t[2]).join(',')+'&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m&hourly=precipitation_probability&daily=sunrise,sunset&wind_speed_unit=mph&timezone=auto&forecast_days=2';
   const r=await fetch(u);if(!r.ok)throw new Error(r.status);let j=await r.json();if(!Array.isArray(j))j=[j];
   SITES.length=0;WARN.length=0;
   j.forEach((d,k)=>{const c=d.current||{},H=d.hourly||{},now=new Date(),h0=(H.time||[]).findIndex(t=>new Date(t)>=new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()));
     const rr=(H.precipitation_probability||[]).slice(Math.max(0,h0),Math.max(0,h0)+12);while(rr.length<12)rr.push(0);
-    const x={n:TOWNS[k][0],p:-1,sub:'',ic:wIc(+c.weather_code||0),t:Math.round(c.temperature_2m||0),w:Math.round(c.wind_speed_10m||0),g:Math.round(c.wind_gusts_10m||0),d:Math.round(c.wind_direction_10m||0),r:rr.map(v=>+v||0)};SITES.push(x);
+    const x={n:L[k][0],p:-1,sub:L[k][3]||'',ic:wIc(+c.weather_code||0),t:Math.round(c.temperature_2m||0),w:Math.round(c.wind_speed_10m||0),g:Math.round(c.wind_gusts_10m||0),d:Math.round(c.wind_direction_10m||0),r:rr.map(v=>+v||0)};SITES.push(x);
     const mx=Math.max(...x.r);if(mx>=60){const at=x.r.indexOf(mx),hh=(now.getHours()+at)%24;WARN.push([`Rain likely at ${x.n}, ${mx}% around ${hh===0?'midnight':hh<12?hh+'am':hh===12?'noon':(hh-12)+'pm'}`,'Plan outside work around it.'])}
     if(x.g>=30)WARN.push([`Gusts up to ${x.g} mph at ${x.n}`,'Take care with ladders and anything loose outside.']);
     if(k===0&&d.daily&&d.daily.sunrise){const tm=s=>{const z=String(s).split('T')[1]||'0:0';const [a,b]=z.split(':');return +a*60+ +b};SUN.r=tm(d.daily.sunrise[0]);SUN.s=tm(d.daily.sunset[0])}});
@@ -2620,7 +2628,7 @@ async function weather(){try{
 }catch(e){console.warn('Weather unavailable',e);if(!SITES.length)$('#wxSites').innerHTML='<div class="empty">Weather is unavailable right now.</div>'}}
 const wxTop=()=>SITES.slice().sort((a,b)=>Math.max(...b.r)-Math.max(...a.r))[0];
 wxSay=function(){const n=nowMin();if(!SITES.length){say('Weather is not loaded yet.');return}const s=SITES[0];
-  say(`${WARN.length?WARN.map(w=>w[0]).join('. ')+'.':'No rain or wind warnings for the Kent sites.'} ${s.n} is ${s.t} degrees, wind ${s.w} mph. ${n>SUN.r&&n<SUN.s?dur(SUN.s-n)+' of daylight left.':'Sunset was at '+fmt(SUN.s)+'.'}`)};
+  say(`${WARN.length?WARN.map(w=>w[0]).join('. ')+'.':'No rain or wind warnings.'} ${s.n} is ${s.t} degrees, wind ${s.w} mph. ${n>SUN.r&&n<SUN.s?dur(SUN.s-n)+' of daylight left.':'Sunset was at '+fmt(SUN.s)+'.'}`)};
 
 /* ---------- assistant summaries from real data ---------- */
 health=function(){let s=100;const r=[],add=(n,t,sel)=>{s-=n;r.push({n,t,sel})};const nN=S.needs.length;
@@ -2666,7 +2674,7 @@ ticker=function(){const n=S.needs.length,L=left(),st=stats(),N=latestNight(),w=S
   const h=items.map(i=>`<span>${i}</span>`).join('');$('#tkr').innerHTML=h+h};
 if(typeof mHeadTxt==='function'){mHeadTxt=function(id){
   if(id==='money'){const inPlay=qSum0(0)+qSum0(1)+qSum0(2),hot=Q.filter(qStale).length,ov=BUD.filter(b=>b.b&&b.s>b.b).length;return ['Money',`<b>${money(inPlay)}</b> in quotes. ${BUD.length} budget${BUD.length===1?'':'s'} tracked${ov?`, ${ov} over`:''}.${hot?` ${hot} quote${hot>1?'s':''} to chase.`:''}`]}
-  if(id==='site')return ['Site',WARN.length?esc(WARN[0][0])+'.':`No weather warnings for the Kent sites. ${S.projects.filter(p=>p.s!=='Paused').length} active projects on the map.`];
+  if(id==='site')return ['Site',WARN.length?esc(WARN[0][0])+'.':`No weather warnings. ${S.projects.filter(p=>p.s!=='Paused').length} active projects on the map.`];
   if(id==='night')return ['Night Shift',S.armed?'<b>Armed.</b> It builds overnight and never spends, sends or deploys.':'On <b>standby</b>. Arm it below to build overnight.'];
   return ['You','Mood, streaks and your shortcuts.']}}
 PROTO.forEach(p=>{
@@ -2683,7 +2691,7 @@ window.claude.use('db').then(d=>{db=d;
   d.doc('settings/night').onSnapshot(s=>{R.night=s.exists?(s.data()||{}):{};sched()});
   d.doc('settings/hub').onSnapshot(s=>{R.hub=s.exists?(s.data()||{}):{}});
 }).catch(e=>console.error('Sign-in failed',e));
-window.__live={R,apply,build,stats};
+window.__live={R,apply,build,stats,weather};
 })();
 </script>
 </body>
